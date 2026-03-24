@@ -1,424 +1,256 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Raven Nightingale — Character Sheet</title>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
-<style>
-  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=MedievalSharp&display=swap');
-  :root {
-    --bg-deep:#0a0810;--bg-card:#12101a;--bg-card-hover:#1a1625;--bg-section:#0e0c16;
-    --border-subtle:#2a2440;--border-accent:#6b4c9a;--gold:#c9a84c;--gold-dim:#8a7235;
-    --gold-bright:#e8c84a;--purple-light:#b388d9;--purple-mid:#7b5ea7;--purple-deep:#4a2d73;
-    --amethyst:#9b59b6;--text-primary:#e0d8ec;--text-secondary:#a89bbe;--text-muted:#6d6080;
-    --red-accent:#c0392b;--teal-accent:#48c9b0;
-  }
-  *{margin:0;padding:0;box-sizing:border-box}
-  body{background:var(--bg-deep);color:var(--text-primary);font-family:'Crimson Text',Georgia,serif;font-size:16px;line-height:1.65;min-height:100vh}
-  body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;background:radial-gradient(ellipse at 20% 0%,rgba(75,45,115,.15) 0%,transparent 50%),radial-gradient(ellipse at 80% 100%,rgba(75,45,115,.1) 0%,transparent 50%);pointer-events:none;z-index:0}
-  .sheet-container{position:relative;z-index:1;max-width:900px;margin:0 auto;padding:20px 16px 80px}
-
-  /* SETUP */
-  .setup-panel{background:var(--bg-card);border:1px solid var(--border-accent);border-radius:6px;padding:32px;margin:60px auto;max-width:640px;font-size:15px;line-height:1.8}
-  .setup-panel h1{font-family:'Cinzel',serif;color:var(--gold);font-size:22px;letter-spacing:2px;margin-bottom:20px}
-  .setup-panel h2{font-family:'Cinzel',serif;color:var(--purple-light);font-size:14px;letter-spacing:1px;margin:20px 0 8px}
-  .setup-panel p{color:var(--text-secondary);margin-bottom:10px}
-  .setup-panel ol{padding-left:20px;color:var(--text-secondary)}
-  .setup-panel li{margin-bottom:8px}
-  .setup-panel code{background:rgba(107,76,154,.15);padding:2px 6px;border-radius:3px;font-size:13px;color:var(--purple-light)}
-  .setup-panel a{color:var(--gold);text-decoration:underline}
-  .setup-input{width:100%;background:var(--bg-section);border:1px solid var(--border-subtle);border-radius:4px;padding:10px 12px;color:var(--text-primary);font-family:monospace;font-size:13px;margin:4px 0 12px;outline:none}
-  .setup-input:focus{border-color:var(--gold-dim)}
-  .setup-input::placeholder{color:var(--text-muted)}
-  .setup-btn{font-family:'Cinzel',serif;font-size:13px;letter-spacing:1.5px;text-transform:uppercase;padding:10px 28px;border:1px solid var(--gold-dim);border-radius:4px;background:transparent;color:var(--gold);cursor:pointer;margin-top:12px;transition:background .2s,color .2s}
-  .setup-btn:hover{background:var(--gold);color:var(--bg-deep)}
-  .setup-error{color:var(--red-accent);font-size:13px;margin-top:8px;display:none}
-  .setup-skip{display:block;text-align:center;margin-top:20px;color:var(--text-muted);font-size:13px;cursor:pointer;text-decoration:underline}
-  .setup-skip:hover{color:var(--text-secondary)}
-
-  /* STATUS BAR */
-  .status-bar{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:center;gap:16px;padding:8px 16px;background:var(--bg-deep);border-bottom:1px solid var(--border-subtle);font-family:'Cinzel',serif;font-size:10px;letter-spacing:2px;text-transform:uppercase}
-  .status-dot{width:7px;height:7px;border-radius:50%;background:var(--text-muted);transition:background .3s}
-  .status-dot.connected{background:var(--teal-accent);box-shadow:0 0 6px rgba(72,201,176,.4)}
-  .status-dot.offline{background:var(--gold-dim)}
-  .status-dot.error{background:var(--red-accent)}
-  .status-label{color:var(--text-muted)}
-  .save-indicator{color:var(--text-muted);transition:color .3s}
-  .save-indicator.saving{color:var(--gold-dim)}
-  .save-indicator.saved{color:var(--teal-accent)}
-
-  /* HEADER */
-  .char-header{text-align:center;padding:52px 20px 30px;border-bottom:1px solid var(--border-subtle);margin-bottom:32px;position:relative}
-  .char-header::after{content:'\2726';position:absolute;bottom:-12px;left:50%;transform:translateX(-50%);background:var(--bg-deep);padding:0 16px;color:var(--gold-dim);font-size:14px;letter-spacing:8px}
-  .char-name{font-family:'Cinzel',serif;font-size:clamp(28px,5vw,42px);font-weight:700;color:var(--gold);letter-spacing:3px;text-transform:uppercase;text-shadow:0 0 30px rgba(201,168,76,.2);margin-bottom:4px}
-  .char-title{font-family:'MedievalSharp',cursive;font-size:18px;color:var(--purple-light);font-style:italic;margin-bottom:10px;letter-spacing:1px}
-  .char-race{font-size:13px;color:var(--text-muted);text-transform:uppercase;letter-spacing:4px}
-
-  /* EDITABLE */
-  [contenteditable="true"]{outline:none;border-bottom:1px solid transparent;transition:border-color .2s,background .2s;border-radius:2px;padding:0 3px}
-  [contenteditable="true"]:hover{border-bottom-color:var(--border-subtle)}
-  [contenteditable="true"]:focus{border-bottom-color:var(--gold-dim);background:rgba(201,168,76,.05)}
-  input.stat-input{background:transparent;border:none;border-bottom:1px solid var(--border-subtle);color:var(--gold-bright);font-family:'Cinzel',serif;font-size:22px;font-weight:700;text-align:center;width:70px;outline:none;transition:border-color .2s}
-  input.stat-input:focus{border-bottom-color:var(--gold)}
-
-  /* SECTIONS */
-  .section{margin-bottom:28px;border:1px solid var(--border-subtle);border-radius:4px;background:var(--bg-card);overflow:hidden}
-  .section-header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;cursor:pointer;user-select:none;background:linear-gradient(135deg,var(--bg-section) 0%,var(--bg-card) 100%);border-bottom:1px solid var(--border-subtle);transition:background .2s}
-  .section-header:hover{background:var(--bg-card-hover)}
-  .section-title{font-family:'Cinzel',serif;font-size:15px;font-weight:600;color:var(--gold);letter-spacing:2px;text-transform:uppercase}
-  .section-toggle{color:var(--text-muted);font-size:12px;transition:transform .3s}
-  .section.collapsed .section-toggle{transform:rotate(-90deg)}
-  .section-body{padding:20px;max-height:8000px;overflow:hidden;transition:max-height .4s ease,padding .3s ease,opacity .3s ease;opacity:1}
-  .section.collapsed .section-body{max-height:0;padding:0 20px;opacity:0}
-
-  /* STATS */
-  .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:16px;padding:8px 0}
-  .stat-block{text-align:center;padding:16px 8px;border:1px solid var(--border-subtle);border-radius:4px;background:var(--bg-section);transition:border-color .2s}
-  .stat-block:hover{border-color:var(--purple-deep)}
-  .stat-label{font-family:'Cinzel',serif;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px}
-
-  /* CLASSES */
-  .class-row{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid rgba(42,36,64,.5)}
-  .class-row:last-child{border-bottom:none}
-  .class-name{font-family:'Cinzel',serif;font-weight:600;color:var(--text-primary);font-size:15px}
-  .class-tier{font-size:12px;color:var(--amethyst);text-transform:uppercase;letter-spacing:1px;text-align:right}
-  .class-level{font-family:'Cinzel',serif;color:var(--gold);font-weight:600;min-width:50px;text-align:right}
-  .class-desc{font-size:14px;color:var(--text-secondary);font-style:italic;padding:4px 0 0;grid-column:1/-1}
-  .class-locked{color:var(--text-muted);font-style:italic}
-
-  /* SKILLS */
-  .skills-table{width:100%;border-collapse:collapse}
-  .skills-table th{font-family:'Cinzel',serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);text-align:left;padding:8px 10px;border-bottom:1px solid var(--border-accent)}
-  .skills-table th:first-child{width:40px;text-align:center}
-  .skills-table th:last-child{width:50px;text-align:center}
-  .skills-table td{padding:7px 10px;border-bottom:1px solid rgba(42,36,64,.3);font-size:14px}
-  .skills-table td:first-child{text-align:center;color:var(--text-muted);font-family:'Cinzel',serif;font-size:12px}
-  .skills-table td:last-child{text-align:center;color:var(--amethyst);font-family:'Cinzel',serif;font-weight:600;font-size:13px}
-  .skills-table tr:hover{background:rgba(107,76,154,.06)}
-  .skill-name{color:var(--text-primary)}
-  .skill-empty{color:var(--text-muted);font-style:italic}
-
-  /* PERKS */
-  .perk-item{margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid rgba(42,36,64,.3)}
-  .perk-item:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
-  .perk-name{font-family:'Cinzel',serif;font-size:14px;font-weight:600;color:var(--purple-light);margin-bottom:2px}
-  .perk-type{font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
-  .perk-desc{font-size:15px;color:var(--text-secondary)}
-
-  /* GEAR */
-  .gear-category{font-family:'Cinzel',serif;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--gold-dim);margin:20px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--border-subtle)}
-  .gear-category:first-child{margin-top:0}
-  .gear-item{margin-bottom:4px}
-  .gear-toggle{display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 0;user-select:none}
-  .gear-toggle:hover .gear-name{color:var(--gold-bright)}
-  .gear-arrow{font-size:10px;color:var(--text-muted);transition:transform .2s;flex-shrink:0}
-  .gear-item.open .gear-arrow{transform:rotate(90deg)}
-  .gear-name{font-family:'Cinzel',serif;font-size:14px;font-weight:600;color:var(--text-primary);transition:color .2s}
-  .gear-details{display:none;padding:4px 0 12px 20px;font-size:14px;color:var(--text-secondary);line-height:1.7}
-  .gear-item.open .gear-details{display:block}
-  .gear-effect{margin-bottom:6px}
-  .gear-effect-name{color:var(--purple-light);font-style:italic}
-  .gear-drawback{color:var(--red-accent);font-size:13px;margin-top:6px;opacity:.85}
-  .gear-flavor{font-style:italic;color:var(--text-muted);font-size:13px;margin-top:8px}
-
-  /* PROSE */
-  .prose{font-size:15px;line-height:1.75;color:var(--text-secondary)}
-  .prose p{margin-bottom:12px}
-  .prose strong{color:var(--text-primary);font-weight:600}
-  .prose em{color:var(--purple-light)}
-  .oath-block{border-left:3px solid var(--gold-dim);padding:16px 20px;margin:16px 0;background:rgba(201,168,76,.03);border-radius:0 4px 4px 0;font-style:italic;color:var(--text-secondary);line-height:1.8}
-
-  /* RELATIONSHIPS */
-  .rel-card{padding:14px 0;border-bottom:1px solid rgba(42,36,64,.3)}
-  .rel-card:last-child{border-bottom:none}
-  .rel-name{font-family:'Cinzel',serif;font-weight:600;font-size:15px;color:var(--gold);margin-bottom:4px}
-  .rel-details{font-size:14px;color:var(--text-secondary)}
-
-  /* DISCIPLINES */
-  .discipline-list{display:flex;flex-wrap:wrap;gap:8px;padding:4px 0}
-  .discipline-tag{font-family:'Cinzel',serif;font-size:12px;letter-spacing:1px;padding:6px 14px;border:1px solid var(--border-accent);border-radius:2px;color:var(--purple-light);background:rgba(107,76,154,.08)}
-
-  /* NOTES */
-  .notes-area{width:100%;min-height:100px;background:var(--bg-section);border:1px solid var(--border-subtle);border-radius:4px;padding:14px;color:var(--text-secondary);font-family:'Crimson Text',Georgia,serif;font-size:15px;line-height:1.7;resize:vertical;outline:none}
-  .notes-area:focus{border-color:var(--gold-dim)}
-
-  .edit-hint{text-align:center;font-size:11px;color:var(--text-muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:24px;opacity:.6}
-
-  @media(max-width:600px){
-    .sheet-container{padding:12px 10px 60px}
-    .section-body{padding:14px}
-    .stats-grid{grid-template-columns:repeat(3,1fr);gap:10px}
-    .class-row{grid-template-columns:1fr;gap:4px}
-    .class-tier,.class-level{text-align:left}
-    .status-bar{font-size:9px;gap:10px}
-  }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Raven Nightingale — Character Sheet</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
+<!-- ═══════ SETUP ═══════ -->
 <div class="setup-panel" id="setup-panel" style="display:none;">
   <h1>Firebase Setup</h1>
-  <p>This character sheet uses Firebase for real-time sync. One-time setup — takes about 5 minutes.</p>
+  <p>Real-time sync between devices. One-time setup — about 5 minutes.</p>
   <h2>Step 1 — Create a Firebase Project</h2>
   <ol>
     <li>Go to <a href="https://console.firebase.google.com/" target="_blank">console.firebase.google.com</a></li>
-    <li>Click <strong>Add project</strong>, name it anything (e.g. "raven-quest")</li>
-    <li>Disable Google Analytics (not needed), click <strong>Create project</strong></li>
+    <li>Click <strong>Add project</strong>, name it anything</li>
+    <li>Disable Google Analytics, click <strong>Create project</strong></li>
   </ol>
   <h2>Step 2 — Create a Realtime Database</h2>
   <ol>
-    <li>In your project, go to <strong>Build → Realtime Database</strong></li>
-    <li>Click <strong>Create Database</strong>, choose any location</li>
-    <li>Select <strong>Start in test mode</strong>, click <strong>Enable</strong></li>
+    <li><strong>Build → Realtime Database → Create Database</strong></li>
+    <li>Choose any location, select <strong>Start in test mode</strong></li>
   </ol>
   <h2>Step 3 — Get Your Config</h2>
   <ol>
-    <li>Go to <strong>Project Settings</strong> (gear icon)</li>
-    <li>Scroll to <strong>Your apps</strong>, click the <code>&lt;/&gt;</code> Web icon</li>
-    <li>Register an app (any name), skip hosting</li>
-    <li>Copy these values from the config object shown:</li>
+    <li><strong>Project Settings</strong> (gear icon) → <strong>Your apps</strong> → click <code>&lt;/&gt;</code> Web</li>
+    <li>Register an app, skip hosting, copy these values:</li>
   </ol>
-  <input class="setup-input" id="cfg-apiKey" placeholder="apiKey (e.g. AIzaSyC...)">
-  <input class="setup-input" id="cfg-authDomain" placeholder="authDomain (e.g. raven-quest.firebaseapp.com)">
-  <input class="setup-input" id="cfg-databaseURL" placeholder="databaseURL (e.g. https://raven-quest-default-rtdb.firebaseio.com)">
-  <input class="setup-input" id="cfg-projectId" placeholder="projectId (e.g. raven-quest)">
+  <input class="setup-input" id="cfg-apiKey" placeholder="apiKey">
+  <input class="setup-input" id="cfg-authDomain" placeholder="authDomain">
+  <input class="setup-input" id="cfg-databaseURL" placeholder="databaseURL (required)">
+  <input class="setup-input" id="cfg-projectId" placeholder="projectId">
   <button class="setup-btn" onclick="saveConfig()">Connect</button>
   <div class="setup-error" id="setup-error"></div>
-  <span class="setup-skip" onclick="skipSetup()">Skip — use offline (localStorage only)</span>
+  <span class="setup-skip" onclick="skipSetup()">Skip — use offline only</span>
 </div>
 
-<div class="status-bar" id="status-bar" style="display:none;">
-  <span class="status-dot" id="status-dot"></span>
-  <span class="status-label" id="status-label">Connecting...</span>
-  <span class="save-indicator" id="save-indicator">&nbsp;</span>
-</div>
+<!-- ═══════ APP ═══════ -->
+<div id="app-wrapper" style="display:none;">
 
-<div class="sheet-container" id="sheet" style="display:none;">
-  <div class="char-header">
-    <div class="char-name" contenteditable="true" data-field="header/charName">Raven Nightingale</div>
-    <div class="char-title" contenteditable="true" data-field="header/charTitle">The Woundwright</div>
-    <div class="char-race" contenteditable="true" data-field="header/charRace">Half-Elf</div>
-  </div>
-  <div class="edit-hint">Click any field to edit · Changes sync in real time · Click headers to collapse</div>
-
-  <div class="section" id="sec-stats"><div class="section-header" onclick="toggleSection('sec-stats')"><span class="section-title">Stats</span><span class="section-toggle">▼</span></div>
-    <div class="section-body"><div class="stats-grid" data-section="stats">
-      <div class="stat-block"><div class="stat-label">Strength</div><input class="stat-input" type="number" value="339" data-stat="str"></div>
-      <div class="stat-block"><div class="stat-label">Vigor</div><input class="stat-input" type="number" value="325" data-stat="vig"></div>
-      <div class="stat-block"><div class="stat-label">Dexterity</div><input class="stat-input" type="number" value="333" data-stat="dex"></div>
-      <div class="stat-block"><div class="stat-label">Agility</div><input class="stat-input" type="number" value="338" data-stat="agi"></div>
-      <div class="stat-block"><div class="stat-label">Magic</div><input class="stat-input" type="number" value="403" data-stat="mag"></div>
-      <div class="stat-block"><div class="stat-label">Charisma</div><input class="stat-input" type="number" value="401" data-stat="cha"></div>
-      <div class="stat-block"><div class="stat-label">Free Points</div><input class="stat-input" type="number" value="0" data-stat="free"></div>
-    </div></div>
+  <!-- Status Bar -->
+  <div class="status-bar" id="status-bar">
+    <span class="status-dot" id="status-dot"></span>
+    <span class="status-label" id="status-label">Connecting...</span>
+    <span class="save-indicator" id="save-indicator">&nbsp;</span>
   </div>
 
-  <div class="section" id="sec-classes"><div class="section-header" onclick="toggleSection('sec-classes')"><span class="section-title">Classes</span><span class="section-toggle">▼</span></div>
-    <div class="section-body" data-section="classes">
-      <div class="class-row"><div class="class-name" contenteditable="true">‹Demon Lord of Pride›</div><div class="class-tier" contenteditable="true">Uber (2)</div><div class="class-level">Lv. <span contenteditable="true">3</span></div><div class="class-desc" contenteditable="true">The force of upheaval, dominion, and sovereign dread.</div></div>
-      <div class="class-row"><div class="class-name" contenteditable="true">‹Eclipse Princess›</div><div class="class-tier" contenteditable="true">S (1)</div><div class="class-level">Lv. <span contenteditable="true">11</span></div><div class="class-desc" contenteditable="true">Echo's class. Umbral Magic, Necromancy, Rulership. Most developed class.</div></div>
-      <div class="class-row"><div class="class-name" contenteditable="true">‹Epochbreaker›</div><div class="class-tier" contenteditable="true">S (1)</div><div class="class-level">Lv. <span contenteditable="true">4</span></div><div class="class-desc" contenteditable="true">Chronomancy swordsman class. Time magic and advanced swordsmanship.</div></div>
-      <div class="class-row"><div class="class-name class-locked">Secondary Slot</div><div class="class-tier class-locked">Locked</div><div class="class-level class-locked">—</div></div>
-      <div class="class-row"><div class="class-name class-locked">Secondary Slot</div><div class="class-tier class-locked">Locked</div><div class="class-level class-locked">—</div></div>
+  <!-- Navigation -->
+  <nav class="nav-bar">
+    <span class="nav-tab" id="tab-overview">Overview</span>
+    <span class="nav-tab" id="tab-skills">Skills</span>
+    <span class="nav-tab" id="tab-perks">Perks</span>
+    <span class="nav-tab" id="tab-inventory">Inventory</span>
+    <span class="nav-tab" id="tab-identity">Identity</span>
+    <span class="nav-tab" id="tab-relationships">Relationships</span>
+    <span class="nav-tab" id="tab-chronicle">Chronicle</span>
+  </nav>
+
+  <div class="app-container">
+
+    <!-- ═══ OVERVIEW ═══ -->
+    <div class="page" id="page-overview">
+      <div class="char-banner">
+        <div class="char-name" contenteditable="true" data-field="header/charName">Raven Nightingale</div>
+        <div class="char-title-main" contenteditable="true" data-field="header/charTitle">The Woundwright</div>
+        <div class="char-race" contenteditable="true" data-field="header/charRace">Half-Elf</div>
+      </div>
+
+      <div class="card" id="card-stats">
+        <div class="card-header" onclick="toggleCard(this)">
+          <span class="card-title">Stats</span><span class="card-toggle">▼</span>
+        </div>
+        <div class="card-body">
+          <div class="stats-grid" data-section="stats">
+            <div class="stat-block"><div class="stat-label">Strength</div><input class="stat-input" type="number" value="339" data-stat="str"></div>
+            <div class="stat-block"><div class="stat-label">Vigor</div><input class="stat-input" type="number" value="325" data-stat="vig"></div>
+            <div class="stat-block"><div class="stat-label">Dexterity</div><input class="stat-input" type="number" value="333" data-stat="dex"></div>
+            <div class="stat-block"><div class="stat-label">Agility</div><input class="stat-input" type="number" value="338" data-stat="agi"></div>
+            <div class="stat-block"><div class="stat-label">Magic</div><input class="stat-input" type="number" value="403" data-stat="mag"></div>
+            <div class="stat-block"><div class="stat-label">Charisma</div><input class="stat-input" type="number" value="401" data-stat="cha"></div>
+            <div class="stat-block"><div class="stat-label">Free Points</div><input class="stat-input" type="number" value="0" data-stat="free"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="card-classes">
+        <div class="card-header" onclick="toggleCard(this)">
+          <span class="card-title">Classes</span><span class="card-toggle">▼</span>
+        </div>
+        <div class="card-body" data-section="classes">
+          <div class="class-row"><div class="class-name-label" contenteditable="true">‹Demon Lord of Pride›</div><div class="class-tier" contenteditable="true">Uber (2)</div><div class="class-level">Lv. <span contenteditable="true">3</span></div><div class="class-desc" contenteditable="true">The force of upheaval, dominion, and sovereign dread. First in centuries.</div></div>
+          <div class="class-row"><div class="class-name-label" contenteditable="true">‹Eclipse Princess›</div><div class="class-tier" contenteditable="true">S (1)</div><div class="class-level">Lv. <span contenteditable="true">11</span></div><div class="class-desc" contenteditable="true">Echo's class. Umbral Magic, Necromancy, Rulership. Most developed.</div></div>
+          <div class="class-row"><div class="class-name-label" contenteditable="true">‹Epochbreaker›</div><div class="class-tier" contenteditable="true">S (1)</div><div class="class-level">Lv. <span contenteditable="true">4</span></div><div class="class-desc" contenteditable="true">Chronomancy swordsman. Time magic and advanced swordsmanship.</div></div>
+          <div class="class-row"><div class="class-name-label class-locked">Secondary Slot</div><div class="class-tier class-locked">Locked</div><div class="class-level class-locked">—</div></div>
+          <div class="class-row"><div class="class-name-label class-locked">Secondary Slot</div><div class="class-tier class-locked">Locked</div><div class="class-level class-locked">—</div></div>
+        </div>
+      </div>
+
+      <div class="card" id="card-disciplines">
+        <div class="card-header" onclick="toggleCard(this)">
+          <span class="card-title">Magical Disciplines</span><span class="card-toggle">▼</span>
+        </div>
+        <div class="card-body" data-section="disciplines">
+          <div class="discipline-list">
+            <span class="discipline-tag" contenteditable="true">Murder Magic</span>
+            <span class="discipline-tag" contenteditable="true">Death Magic</span>
+            <span class="discipline-tag" contenteditable="true">Fate Magic</span>
+            <span class="discipline-tag" contenteditable="true">Umbral Magic</span>
+            <span class="discipline-tag" contenteditable="true">Swordsmanship</span>
+            <span class="discipline-tag" contenteditable="true">Thaumaturgy</span>
+            <span class="discipline-tag" contenteditable="true">Abjuration</span>
+          </div>
+        </div>
+      </div>
     </div>
-  </div>
 
-  <div class="section" id="sec-disciplines"><div class="section-header" onclick="toggleSection('sec-disciplines')"><span class="section-title">Magical Disciplines</span><span class="section-toggle">▼</span></div>
-    <div class="section-body" data-section="disciplines"><div class="discipline-list">
-      <span class="discipline-tag" contenteditable="true">Murder Magic</span><span class="discipline-tag" contenteditable="true">Death Magic</span><span class="discipline-tag" contenteditable="true">Fate Magic</span><span class="discipline-tag" contenteditable="true">Umbral Magic</span><span class="discipline-tag" contenteditable="true">Swordsmanship</span><span class="discipline-tag" contenteditable="true">Thaumaturgy</span><span class="discipline-tag" contenteditable="true">Abjuration</span>
-    </div></div>
-  </div>
+    <!-- ═══ SKILLS ═══ -->
+    <div class="page" id="page-skills">
+      <div class="page-header">
+        <div class="page-title">Skills</div>
+        <div class="page-subtitle">30 of 32 slots filled</div>
+      </div>
+      <div class="card">
+        <div class="card-body" data-section="skills" id="skills-list"></div>
+      </div>
+    </div>
 
-  <div class="section" id="sec-skills"><div class="section-header" onclick="toggleSection('sec-skills')"><span class="section-title">Skills — 30 / 32</span><span class="section-toggle">▼</span></div>
-    <div class="section-body" data-section="skills"><table class="skills-table"><thead><tr><th>#</th><th>Skill</th><th>Tier</th></tr></thead><tbody id="skills-body"></tbody></table></div>
-  </div>
+    <!-- ═══ PERKS ═══ -->
+    <div class="page" id="page-perks">
+      <div class="page-header">
+        <div class="page-title">Perks</div>
+        <div class="page-subtitle">Passive abilities outside skill slots</div>
+      </div>
+      <div class="card">
+        <div class="card-body" data-section="perks" id="perks-list"></div>
+      </div>
+    </div>
 
-  <div class="section" id="sec-perks"><div class="section-header" onclick="toggleSection('sec-perks')"><span class="section-title">Perks</span><span class="section-toggle">▼</span></div>
-    <div class="section-body" data-section="perks" id="perks-body"></div>
-  </div>
+    <!-- ═══ INVENTORY ═══ -->
+    <div class="page" id="page-inventory">
+      <div class="page-header">
+        <div class="page-title">Inventory</div>
+        <div class="page-subtitle">Gear, equipment, and curiosities</div>
+      </div>
+      <div class="card" style="overflow:visible;">
+        <div data-section="gear" id="gear-list"></div>
+      </div>
+    </div>
 
-  <div class="section" id="sec-gear"><div class="section-header" onclick="toggleSection('sec-gear')"><span class="section-title">Gear & Equipment</span><span class="section-toggle">▼</span></div>
-    <div class="section-body" data-section="gear" id="gear-body"></div>
-  </div>
+    <!-- ═══ IDENTITY ═══ -->
+    <div class="page" id="page-identity">
+      <div class="page-header">
+        <div class="page-title">Identity</div>
+        <div class="page-subtitle">Who she is, who she swore to be, and the other her</div>
+      </div>
 
-  <div class="section" id="sec-personality"><div class="section-header" onclick="toggleSection('sec-personality')"><span class="section-title">Personality</span><span class="section-toggle">▼</span></div>
-    <div class="section-body" data-section="personality"><div class="prose" contenteditable="true">
-      <p><strong>What she knows about herself:</strong></p><p>She <strong>fears her destiny.</strong> The title of ‹Demon Lord› carries centuries of blood.</p><p>She <strong>fears the Hero.</strong> Not from cowardice, but from clarity.</p><p>She is <strong>petty.</strong> Small grievances stick.</p><p>She is <strong>contrary for the sake of being contrary.</strong></p><p>She is <strong>not as worldly as she pretends.</strong></p><p>She is still <strong>deciding what it means to be the ‹Demon Lord›.</strong></p><p><strong>What she shows the world:</strong> A strong front. Spirited. Driven by sentiment over logic.</p><p><strong>Core want:</strong> To be <strong>free.</strong> Not a piece on someone else's board.</p>
-    </div></div>
-  </div>
+      <div class="card">
+        <div class="card-header" onclick="toggleCard(this)">
+          <span class="card-title">Personality</span><span class="card-toggle">▼</span>
+        </div>
+        <div class="card-body" data-section="personality">
+          <div class="prose" contenteditable="true">
+            <p><strong>What she knows about herself:</strong></p>
+            <p>She <strong>fears her destiny.</strong> The title of ‹Demon Lord› carries centuries of blood. She knows what is coming.</p>
+            <p>She <strong>fears the Hero.</strong> Not from cowardice, but from clarity. The fate of Demon Lord and Hero is specific and personal.</p>
+            <p>She is <strong>petty.</strong> Small grievances stick. She can hold a grudge over something trivial while being capable of profound compassion.</p>
+            <p>She is <strong>contrary for the sake of being contrary.</strong> Tell her what to do and her first instinct is the opposite.</p>
+            <p>She is <strong>not as worldly as she pretends.</strong> A sheltered princess who ran away from home, doing her best. The gap between the performance and the reality is a source of both comedy and genuine vulnerability.</p>
+            <p>She is still <strong>deciding what it means to be the ‹Demon Lord›.</strong> She knows what it has meant. She does not yet know what it will mean when it is <em>her.</em></p>
+            <p><strong>What she shows the world:</strong></p>
+            <p>A <strong>strong front.</strong> Fear and weakness are not freely shown. She is not too proud for vulnerability with those she trusts — with Ascenia, Kaela, and Fel, the armor has begun to come down. She is <strong>spirited</strong> — alive in a way that feels genuine. She is driven more by <strong>sentiment than logic or the pursuit of power.</strong></p>
+            <p><strong>Her core want:</strong> Raven wants to be <strong>free.</strong> Not philosophically — specifically. Not a piece on someone else's board. Not her father's, not Gray's, not the System's, not the world's inherited story of what a ‹Demon Lord› must be.</p>
+          </div>
+        </div>
+      </div>
 
-  <div class="section" id="sec-oath"><div class="section-header" onclick="toggleSection('sec-oath')"><span class="section-title">The Oath</span><span class="section-toggle">▼</span></div>
-    <div class="section-body" data-section="oath"><div class="oath-block" contenteditable="true">"For my truth it is this. I am the Demon Lord. Saddled with a destiny I did not want. And I worry that I will never deserve to be called 'good' because of it."<br><br><em>I exhale slowly. And then take another breath.</em><br><br>"I vow it here and now: though I was born to shatter this world, I shall love it nonetheless. I will stand defiant before gods and men alike, wielding my strength not to tear asunder, but to mend. This world, with all its flaws and beauty, will know my name — not as the harbinger of destruction, but as its savior. I shall forge this world a better future, and I shall suffer neither man nor god to change my course."</div></div>
-  </div>
+      <div class="card">
+        <div class="card-header" onclick="toggleCard(this)">
+          <span class="card-title">The Oath</span><span class="card-toggle">▼</span>
+        </div>
+        <div class="card-body" data-section="oath">
+          <div class="oath-block" contenteditable="true">
+            "For my truth it is this. I am the Demon Lord. Saddled with a destiny I did not want. And I worry that I will never deserve to be called 'good' because of it."<br><br>
+            <em>I exhale slowly. And then take another breath.</em><br><br>
+            "I vow it here and now: though I was born to shatter this world, I shall love it nonetheless. I will stand defiant before gods and men alike, wielding my strength not to tear asunder, but to mend. This world, with all its flaws and beauty, will know my name — not as the harbinger of destruction, but as its savior. I shall forge this world a better future, and I shall suffer neither man nor god to change my course."
+          </div>
+        </div>
+      </div>
 
-  <div class="section" id="sec-echo"><div class="section-header" onclick="toggleSection('sec-echo')"><span class="section-title">Echo — The Eclipse Princess</span><span class="section-toggle">▼</span></div>
-    <div class="section-body" data-section="echo"><div class="prose" contenteditable="true">
-      <p>Echo is the second soul inhabiting Raven's body, born from ‹Shattered Self›. She is <strong>Raven as she would have been</strong> without the ‹Demon Lord› class.</p><p>A <strong>divergent self</strong> — same root, different branch. <strong>Colder. More royal. More distant. More logical.</strong></p><p>They are not enemies. They are not perfectly harmonious. They are two women who know each other more intimately than anyone ever could.</p><p>Echo can speak into Raven's mind at any time.</p>
-    </div></div>
-  </div>
+      <div class="card">
+        <div class="card-header" onclick="toggleCard(this)">
+          <span class="card-title">Echo — The Eclipse Princess</span><span class="card-toggle">▼</span>
+        </div>
+        <div class="card-body" data-section="echo">
+          <div class="prose" contenteditable="true">
+            <p>Echo is the second soul inhabiting Raven's body, born from ‹Shattered Self›. She is <strong>Raven as she would have been</strong> had she never received the ‹Demon Lord› class — had she grown into the ‹Eclipse Princess› that might otherwise have been her birthright.</p>
+            <p>She is not a separate person. She is a <strong>divergent self</strong> — the same root, a different branch.</p>
+            <p>Where Raven is warm, alive, and sentiment-driven, Echo is <strong>colder</strong> — more reserved, less given to open emotion. <strong>More royal</strong> — the bearing of a princess who grew up performing royalty rather than running from it. <strong>More distant</strong> — where Raven reaches toward people, Echo maintains careful space. <strong>More logical</strong> — less driven by feeling, more by calculation and considered principle.</p>
+            <p>They are not enemies. They are not perfectly harmonious. They are two women who know each other more intimately than anyone ever could — because they are each other.</p>
+            <p>Echo can speak into Raven's mind at any time regardless of manifestation.</p>
+          </div>
+        </div>
+      </div>
+    </div>
 
-  <div class="section" id="sec-relationships"><div class="section-header" onclick="toggleSection('sec-relationships')"><span class="section-title">Relationships</span><span class="section-toggle">▼</span></div>
-    <div class="section-body" data-section="relationships" id="rel-body"></div>
-  </div>
+    <!-- ═══ RELATIONSHIPS ═══ -->
+    <div class="page" id="page-relationships">
+      <div class="page-header">
+        <div class="page-title">Relationships</div>
+        <div class="page-subtitle">Friends, family, and those who matter</div>
+      </div>
+      <div class="card">
+        <div class="card-body" data-section="relationships" id="rels-list"></div>
+      </div>
+    </div>
 
-  <div class="section" id="sec-story"><div class="section-header" onclick="toggleSection('sec-story')"><span class="section-title">Story So Far</span><span class="section-toggle">▼</span></div>
-    <div class="section-body" data-section="story"><div class="prose" contenteditable="true">
-      <p><strong>The Night of the Class Assignment</strong><br>On her fifteenth birthday, the System assigned her ‹Demon Lord›. She fled into the Labyrinth of Murder and swore her oath.</p><p><strong>The Labyrinth of Thirsting Joy</strong><br>Gained ‹Shattered Self› and Echo. Forced the Incarnation of Pride to submit. Ascended to ‹Demon Lord of Pride (2)›. Received ‹Epochbreaker (1)›.</p><p><strong>Scholomance</strong><br>Enrolled with ‹Demon Lord› concealed. Befriended Ascenia, Kaela, and Fel.</p><p><strong>Current Chapter</strong><br>First floor of the Crystal Labyrinth — Dungeoneering 101 final.</p>
-    </div></div>
-  </div>
+    <!-- ═══ CHRONICLE ═══ -->
+    <div class="page" id="page-chronicle">
+      <div class="page-header">
+        <div class="page-title">Chronicle</div>
+        <div class="page-subtitle">The story so far</div>
+      </div>
+      <div class="card">
+        <div class="card-header" onclick="toggleCard(this)">
+          <span class="card-title">Story</span><span class="card-toggle">▼</span>
+        </div>
+        <div class="card-body" data-section="story">
+          <div class="prose" contenteditable="true">
+            <p><strong>The Night of the Class Assignment</strong><br>On Raven's fifteenth birthday, the System assigned her ‹Demon Lord› — the first in centuries. Knowing her father would use it, she fled into the Labyrinth of Murder and swore her oath: not to destroy the world, but to protect all that made it beautiful.</p>
+            <p><strong>The Labyrinth of Thirsting Joy</strong><br>Raven confronted the manifestation of her inner desire and overcame it through compassion. She gained ‹Shattered Self› and Echo, forced the Incarnation of Pride to submit, ascended to ‹Demon Lord of Pride (2)›, and received ‹Epochbreaker (1)›.</p>
+            <p><strong>Scholomance — The Arcanum</strong><br>Enrolled with ‹Demon Lord› concealed. Befriended Ascenia, Kaela, and Fel. Spent several months building genuine friendships and deepening her magical studies.</p>
+            <p><strong>Current Chapter</strong><br>Partway through the first floor of the Crystal Labyrinth for the Dungeoneering 101 final.</p>
+          </div>
+        </div>
+      </div>
 
-  <div class="section" id="sec-notes"><div class="section-header" onclick="toggleSection('sec-notes')"><span class="section-title">Session Notes</span><span class="section-toggle">▼</span></div>
-    <div class="section-body" data-section="notes"><textarea class="notes-area" id="notes-area" placeholder="Add session notes, reminders, or anything else here..."></textarea></div>
+      <div class="card">
+        <div class="card-header" onclick="toggleCard(this)">
+          <span class="card-title">Session Notes</span><span class="card-toggle">▼</span>
+        </div>
+        <div class="card-body" data-section="notes">
+          <textarea class="notes-area" id="notes-area" placeholder="Add session notes, reminders, plans, or anything else here..."></textarea>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 
-<script>
-// ══════ UI HELPERS ══════
-function toggleSection(id){document.getElementById(id).classList.toggle('collapsed')}
-function toggleGear(el){el.closest('.gear-item').classList.toggle('open')}
-
-// ══════ BUILD DEFAULT CONTENT ══════
-const SKILLS=[['Grave-Thread Sovereignty','III'],['Identify','II'],['Shroud of the Waiting Void','II'],['Murder Magic','IV'],["Hydra's Stare",'I'],['Fate Magic','IV'],['Shadowbound Retinue','I'],['Midnight Descent','II'],['Lunar Conductor','I'],['Crown of Dreadful Radiance','II'],['Sanguine Crown','I'],['Shadowfall Sight','I'],['Calamity Engine','I'],['Radiance of the First Throne','II'],['Pyric Axiom','X'],['Death Magic','IV'],['Kind Touch, Cold Flesh','I'],['Umbramancy','III'],['Veinweaving','I'],['Grayscale Insight','I'],['Moonwell Intuition','I'],['Accelerated Horizon','I'],['Thaumaturgy','II'],['Third Presence','II'],['Wings of the Everwill','III'],['Abjuration','II'],['Smithing','II'],['Essence Reservoir','III'],['Sepulchral Refrain','III'],['Supremacy Harvest','II'],[null,null],[null,null]];
-(function buildSkills(){const sb=document.getElementById('skills-body');SKILLS.forEach((s,i)=>{const tr=document.createElement('tr');tr.innerHTML=s[0]?`<td>${i+1}</td><td><span class="skill-name" contenteditable="true">\u2039${s[0]}\u203a</span></td><td contenteditable="true">${s[1]}</td>`:`<td>${i+1}</td><td><span class="skill-empty" contenteditable="true">Empty</span></td><td>\u2014</td>`;sb.appendChild(tr)})})();
-
-const PERKS=[{n:'Boon of the White Bloom',t:'Passive',d:'In places of death and despair, the air around Raven calms. Minor undead and tormented enemies are delayed.'},{n:'Desire Remembered',t:'Active, 1/Day',d:'Invoke one true desire aloud. Next skill/spell/attack gains Charisma scaling.'},{n:'Ember of Self Control',t:'Passive/Active',d:'Boosts willpower. Once/day, burn away foreign mental influences.'},{n:'Mark of the Hollow Choir',t:'Active, 1/Hour',d:'Voice gains strange weight. Enemies hesitate; allies reassured.'},{n:'Scarlet Mark',t:'Passive/Active',d:'Insight into Blood/Murder Magic. Flares nearby. Once/day interrupt a ritual by bleeding on it.'},{n:'Shattered Self',t:'Passive/Active',d:'Grants second primary class. Once/day summon Echo for 40 seconds. Immune to charm/fear while out.'},{n:'Stillwater Memory',t:'Passive',d:'Water spells extended naturally. Mana regen in rain. Water spirits may recognize her as purifier.'}];
-(function(){const pb=document.getElementById('perks-body');PERKS.forEach(p=>{const d=document.createElement('div');d.className='perk-item';d.innerHTML=`<div class="perk-name" contenteditable="true">${p.n}</div><div class="perk-type" contenteditable="true">${p.t}</div><div class="perk-desc" contenteditable="true">${p.d}</div>`;pb.appendChild(d)})})();
-
-const GEAR={'Weapons & Tools':[{name:'Sutureblade, Threaded Grief',fx:[{n:'Wound as Restoration',d:'Unravels affliction without killing.'},{n:'Fatecleave',d:'Once/day cuts through destiny.'},{n:"Mercy's Edge",d:'Cannot kill unless chosen. Surges with purpose.'},{n:'Grieving Edge',d:'Stored sorrow burns oath-breakers.'},{n:'Sever Regret',d:'Remove a painful memory from a willing ally.'}],warn:'Pain accumulates in the soul.',flav:'"It was never meant to kill."'},{name:'Riverglass Fang',fx:[{n:'Flowcut Form',d:'No momentum penalty.'},{n:'Spellchannel Core',d:'Store one spell for melee detonation.'},{n:'Moonwater Resonance',d:'Silent in water/rain.'},{n:'Spirit Recognition',d:'Sacred to purified spirits.'}]},{name:'Thirstbrand Dagger',fx:[{n:'Wound to Weave',d:'Self-inflicted wounds fuel spells.'},{n:'Arcane Hunger',d:'Whispers if unfed.'},{n:'Sympathetic Link',d:'Blood tether targeting.'}]},{name:'Tetherlash',fx:[{n:'Latching Pull',d:'Anchor and pull foes.'},{n:'Ceiling Hook',d:'Vault via ceilings.'},{n:'Whisper Coil',d:'Masks movement.'}]},{name:'Scriptfang Quill',fx:[{n:'Script of the Living Word',d:'Once/hour write \u22645 words in blood to make real.'},{n:"Bloodletter's Authority",d:'Blood rituals faster/harder to dispel.'},{n:'Ink That Cuts',d:'Write runes into bodies.'},{n:'The Second Word',d:'Second phrase while first active.'}],warn:'Cannot write lies in blood.'},{name:'Dirgeflute of the Last Masque',fx:[{n:'Soundless Dirge',d:'Target hears melody. Mental pressure builds.'},{n:'One-Note Ending',d:'Once/day stagger or stun.'}]},{name:'The Arterial Lexicon',fx:[{n:'Veinweaving',d:'Sense/manipulate blood.'},{n:'Rite of the Living Seal',d:'Seal dying essence (max 7).'},{n:'Spilled Ink, Spilled Life',d:'Blood for mana in rituals.'}],warn:'Forbidden rituals inside. One page missing.'}],'Armor & Clothing':[{name:'Cuirass of the Silent Sentence',fx:[{n:'Silent Dominion',d:'Cannot be compelled to speak.'},{n:'Weight of Judgment',d:'Unjust attackers slowed.'},{n:'Iron Witness',d:'Detects lies in last minute.'}],warn:'Tolling bell if she strikes the innocent.'},{name:'Deathfeather Cloak',fx:[{n:'Necrotic Resistance',d:'Resist necrotic.'},{n:'Veil of the Forgotten',d:'Stealth in dim light.'},{n:"Death's Mourning",d:'Once/day feign death, rise healed.'}]},{name:'Petal-Pinned Slippers',fx:[{n:'Soundless Step',d:'Silent movement.'},{n:'Untraceable Grace',d:'No physical trail.'},{n:'Lingering Scent',d:'False trails.'}]}],'Accessories':[{name:'Amber-Touched Hourglass',fx:[{n:'',d:'Extends chronomancy. Resists hostile time-warping. Sharpens timing.'}]},{name:'Bracers of the Clinked Chalice',fx:[{n:'',d:'Three guards = shockwave. Amplifies vs wounded foes.'}]},{name:'Splitsecond Watch',fx:[{n:'',d:'Splits a moment into two paths. Temporal backlash.'}]},{name:'Lucid Signet',fx:[{n:'',d:'Dampens compulsions. Once/day negates mental status effects.'}]},{name:'Giltcoil Band',fx:[{n:'',d:'Once/day steal enemy buff. Charisma when outnumbered.'}]},{name:'Graftfang Loop',fx:[{n:'',d:'Mimic monster techniques. Instinctive evasion.'}]},{name:'Veinroot Anklet',fx:[{n:'',d:'Burst acceleration in darkness. Wall-run. Phantom steps.'}]},{name:'Sash of Spiraling Steps',fx:[{n:'',d:'Agility in motion. Mid-dodge redirects. Chained skills sharpen.'}]}],'Trinkets & Curiosities':[{name:'Cork of the Final Bottle',fx:[{n:'',d:'Seal a state of being. Symbolic moments carry resonance.'}]},{name:'Folded Napkin of Apology',fx:[{n:'',d:'Pacify wounded enemy. Charisma with those wronged.'}]},{name:'Mask of the Forgotten Role',fx:[{n:'',d:'Obscure identity. False persona 10 min.'}],warn:'Prolonged wear blurs identity.'},{name:'Red Verdict Charm',fx:[{n:'',d:'Amplify retaliatory blow. Stagger after grievous injury.'}]},{name:'White Glove of the Final Ovation',fx:[{n:'',d:'Suppress emotions. Spectral applause after poetic victories.'}],warn:'Stores suppressed grief.'}]};
-(function(){const gb=document.getElementById('gear-body');Object.entries(GEAR).forEach(([cat,items])=>{const h=document.createElement('div');h.className='gear-category';h.textContent=cat;gb.appendChild(h);items.forEach(item=>{const d=document.createElement('div');d.className='gear-item';let fx=item.fx.map(e=>`<div class="gear-effect">${e.n?`<span class="gear-effect-name">${e.n}</span> — `:''}${e.d}</div>`).join('');if(item.warn)fx+=`<div class="gear-drawback">\u26A0 ${item.warn}</div>`;if(item.flav)fx+=`<div class="gear-flavor">${item.flav}</div>`;d.innerHTML=`<div class="gear-toggle" onclick="toggleGear(this)"><span class="gear-arrow">\u25B6</span><span class="gear-name">${item.name}</span></div><div class="gear-details" contenteditable="true">${fx}</div>`;gb.appendChild(d)})})})();
-
-const RELS=[{n:'Ascenia',d:'Elf. Silver hair, starry-night eyes. ‹Archimage›. Thaumaturgy specialist.'},{n:'Kaela',d:'Sea-green hair. Bubbly, warm. Hydromancer. A spark of romantic interest.'},{n:'Fel',d:'Black hair, braided. Glasses. Umbral Magic scholar.'},{n:'King Corvus Nightingale',d:'‹Machiavellian Nightingale King (3)›. King first, father second.'},{n:'Prince Rook Nightingale',d:'‹Nightingale Prince (1)›. Kind, generous brother.'},{n:"Raven's Mother",d:'An elf in the Elven Kingdom. Never met. A wound not yet examined.'}];
-(function(){const rb=document.getElementById('rel-body');RELS.forEach(r=>{const d=document.createElement('div');d.className='rel-card';d.innerHTML=`<div class="rel-name" contenteditable="true">${r.n}</div><div class="rel-details" contenteditable="true">${r.d}</div>`;rb.appendChild(d)})})();
-
-// ══════ SYNC ENGINE ══════
-const CONFIG_KEY='raven_fb_cfg';
-const LOCAL_KEY='raven_sheet_v2';
-let db=null,sheetRef=null,isOnline=false,activeSection=null,suppressRemote={},saveTimers={};
-
-const ALL_KEYS=['header/charName','header/charTitle','header/charRace','stats','classes','disciplines','skills','perks','gear','personality','oath','echo','story','relationships','notes'];
-
-// Track focus to avoid overwriting active edits
-document.addEventListener('focusin',e=>{
-  const sec=e.target.closest('[data-section]');
-  const fld=e.target.closest('[data-field]');
-  if(sec)activeSection=sec.dataset.section;
-  else if(fld)activeSection=fld.dataset.field;
-  else if(e.target.id==='notes-area')activeSection='notes';
-  else activeSection=null;
-});
-document.addEventListener('focusout',()=>{setTimeout(()=>{activeSection=null},300)});
-
-function getVal(key){
-  if(key==='stats'){const o={};document.querySelectorAll('.stat-input').forEach(i=>{o[i.dataset.stat]=i.value});return o}
-  if(key==='notes')return document.getElementById('notes-area').value;
-  const fld=document.querySelector(`[data-field="${key}"]`);
-  if(fld)return fld.innerHTML;
-  const sec=document.querySelector(`[data-section="${key}"]`);
-  if(sec)return sec.innerHTML;
-  return null;
-}
-
-function setVal(key,val){
-  if(val==null)return;
-  if(key==='stats'&&typeof val==='object'){document.querySelectorAll('.stat-input').forEach(i=>{if(val[i.dataset.stat]!==undefined)i.value=val[i.dataset.stat]});return}
-  if(key==='notes'){document.getElementById('notes-area').value=val;return}
-  const fld=document.querySelector(`[data-field="${key}"]`);
-  if(fld){fld.innerHTML=val;return}
-  const sec=document.querySelector(`[data-section="${key}"]`);
-  if(sec){sec.innerHTML=val;if(key==='gear')sec.querySelectorAll('.gear-toggle').forEach(t=>t.setAttribute('onclick','toggleGear(this)'))}
-}
-
-function setStatus(state,label){document.getElementById('status-dot').className='status-dot '+state;document.getElementById('status-label').textContent=label}
-function setSave(text,cls){const el=document.getElementById('save-indicator');el.textContent=text;el.className='save-indicator '+(cls||'')}
-
-function scheduleSave(key){
-  if(saveTimers[key])clearTimeout(saveTimers[key]);
-  setSave('Saving...','saving');
-  saveTimers[key]=setTimeout(()=>{
-    const val=getVal(key);
-    if(isOnline&&sheetRef){suppressRemote[key]=true;sheetRef.child(key).set(val).then(()=>setSave('Saved','saved')).catch(()=>setSave('Error',''))}
-    try{const l=JSON.parse(localStorage.getItem(LOCAL_KEY)||'{}');l[key]=val;localStorage.setItem(LOCAL_KEY,JSON.stringify(l))}catch(e){}
-    if(!isOnline)setSave('Saved locally','saved');
-  },800);
-}
-
-function attachListeners(){
-  document.querySelectorAll('[data-field]').forEach(el=>el.addEventListener('input',()=>scheduleSave(el.dataset.field)));
-  document.querySelectorAll('[data-section]').forEach(el=>el.addEventListener('input',()=>scheduleSave(el.dataset.section)));
-  document.querySelectorAll('.stat-input').forEach(i=>i.addEventListener('input',()=>scheduleSave('stats')));
-  document.getElementById('notes-area').addEventListener('input',()=>scheduleSave('notes'));
-}
-
-function startListening(){
-  if(!sheetRef)return;
-  sheetRef.on('value',snap=>{
-    const data=snap.val();
-    if(!data){const seed={};ALL_KEYS.forEach(k=>{seed[k]=getVal(k)});sheetRef.set(seed);return}
-    ALL_KEYS.forEach(k=>{
-      if(k===activeSection)return;
-      if(suppressRemote[k]){delete suppressRemote[k];return}
-      let val=data;k.split('/').forEach(p=>{if(val)val=val[p]});
-      if(val!==undefined)setVal(k,val);
-    });
-  });
-}
-
-function showSheet(){
-  document.getElementById('setup-panel').style.display='none';
-  document.getElementById('sheet').style.display='block';
-  document.getElementById('status-bar').style.display='flex';
-  attachListeners();
-}
-
-function firebaseAvailable(){return typeof firebase!=='undefined'&&firebase.initializeApp}
-
-function initFirebase(config){
-  if(!firebaseAvailable()){
-    console.warn('Firebase SDK not loaded — falling back to offline mode.');
-    skipSetup();return;
-  }
-  try{
-    firebase.initializeApp(config);
-    db=firebase.database();
-    sheetRef=db.ref('sheet');
-    db.ref('.info/connected').on('value',snap=>{
-      if(snap.val()===true){isOnline=true;setStatus('connected','Connected — syncing live')}
-      else{isOnline=false;setStatus('offline','Offline — saving locally')}
-    });
-    showSheet();startListening();
-  }catch(e){
-    document.getElementById('setup-error').textContent='Error: '+e.message;
-    document.getElementById('setup-error').style.display='block';
-  }
-}
-
-function saveConfig(){
-  if(!firebaseAvailable()){document.getElementById('setup-error').textContent='Firebase SDK not loaded. Download this file and open in a browser, or deploy to GitHub Pages.';document.getElementById('setup-error').style.display='block';return}
-  const a=document.getElementById('cfg-apiKey').value.trim(),b=document.getElementById('cfg-authDomain').value.trim(),c=document.getElementById('cfg-databaseURL').value.trim(),d=document.getElementById('cfg-projectId').value.trim();
-  if(!a||!c){document.getElementById('setup-error').textContent='apiKey and databaseURL are required.';document.getElementById('setup-error').style.display='block';return}
-  const cfg={apiKey:a,authDomain:b,databaseURL:c,projectId:d};
-  localStorage.setItem(CONFIG_KEY,JSON.stringify(cfg));
-  initFirebase(cfg);
-}
-
-function skipSetup(){
-  isOnline=false;showSheet();
-  setStatus('offline',firebaseAvailable()?'Offline — localStorage only':'Preview mode — download for full sync');
-  try{const l=JSON.parse(localStorage.getItem(LOCAL_KEY)||'{}');ALL_KEYS.forEach(k=>{if(l[k])setVal(k,l[k])})}catch(e){}
-}
-
-// Boot
-(function(){
-  if(!firebaseAvailable()){
-    // SDK blocked (sandboxed preview, no network, etc.) — go straight to offline
-    skipSetup();return;
-  }
-  const s=localStorage.getItem(CONFIG_KEY);
-  if(s){try{initFirebase(JSON.parse(s))}catch(e){document.getElementById('setup-panel').style.display='block'}}
-  else{document.getElementById('setup-panel').style.display='block'}
-})();
-</script>
+<script src="app.js"></script>
 </body>
 </html>
