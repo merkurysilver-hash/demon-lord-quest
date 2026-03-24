@@ -115,7 +115,7 @@ function removeItem(btn, section) {
   const item = btn.closest('.deletable, .stat-block, .class-row, .skill-card, .perk-card, .gear-item, .rel-card, .discipline-tag');
   if (!item) return;
   item.style.opacity = '0.3';
-  if (confirm('Delete this item?')) {
+  if (confirm('Are you sure you want to delete this?')) {
     item.remove();
     scheduleSave(section);
   } else {
@@ -267,13 +267,14 @@ function initAllContent() {
   const dc = document.getElementById('disciplines-content');
   dc.innerHTML = '<div class="discipline-list">' +
     ['Murder Magic','Death Magic','Fate Magic','Umbral Magic','Swordsmanship','Thaumaturgy','Abjuration']
-      .map(d => `<span class="discipline-tag" contenteditable="true">${d}<span class="disc-del" onclick="this.parentElement.remove();scheduleSave('disciplines')">×</span></span>`).join('') +
+      .map(d => `<span class="discipline-tag" contenteditable="true">${d}<span class="disc-del" onclick="if(confirm('Are you sure you want to delete this?')){this.parentElement.remove();scheduleSave('disciplines')}">×</span></span>`).join('') +
     '</div>';
   buildSkills(document.getElementById('skills-content'));
   buildPerks(document.getElementById('perks-content'));
   buildGear(document.getElementById('gear-content'));
   buildRels(document.getElementById('rels-content'));
   buildSystemRef();
+  renderCalculatorClasses();
 }
 
 // ──── SYSTEM REFERENCE ────
@@ -448,7 +449,7 @@ function addDiscipline() {
   const del = document.createElement('span');
   del.className = 'disc-del';
   del.textContent = '×';
-  del.onclick = function() { tag.remove(); scheduleSave('disciplines'); };
+  del.onclick = function() { if(confirm('Are you sure you want to delete this?')) { tag.remove(); scheduleSave('disciplines'); } };
   tag.appendChild(del);
   list.appendChild(tag);
   // Select text for easy editing
@@ -512,7 +513,7 @@ function rebindHandlers() {
     if (section) b.onclick = function() { removeItem(this, section); };
   });
   document.querySelectorAll('.del-btn-gear').forEach(b => { b.onclick = function() { removeItem(this, 'gear'); }; });
-  document.querySelectorAll('.disc-del').forEach(d => { d.onclick = function() { this.parentElement.remove(); scheduleSave('disciplines'); }; });
+  document.querySelectorAll('.disc-del').forEach(d => { d.onclick = function() { if(confirm('Are you sure you want to delete this?')) { this.parentElement.remove(); scheduleSave('disciplines'); } }; });
   bindGearDrag();
   bindBudgetInputs();
 }
@@ -587,7 +588,106 @@ function bindGearDrag() {
 
 // ──── ROUTING ────
 
-const PAGES = ['overview','skills','perks','inventory','identity','relationships','chronicle'];
+const PAGES = ['overview','skills','perks','inventory','identity','relationships','chronicle','stat-calc'];
+
+// ──── STAT CALCULATOR ────
+
+let CALC_CLASSES = [];
+
+function addCalculatorClass() {
+  const id = Date.now();
+  CALC_CLASSES.push({
+    id: id,
+    name: 'New Class',
+    str: 0, vig: 0, dex: 0, agi: 0, mag: 0, cha: 0, free: 0,
+    levels: 1
+  });
+  renderCalculatorClasses();
+}
+
+function removeCalculatorClass(id) {
+  if (confirm('Are you sure you want to delete this?')) {
+    CALC_CLASSES = CALC_CLASSES.filter(c => c.id !== id);
+    renderCalculatorClasses();
+  }
+}
+
+function updateCalculatorClass(id, field, value) {
+  const cls = CALC_CLASSES.find(c => c.id === id);
+  if (cls) {
+    if (field === 'levels') {
+      cls.levels = Math.max(1, Math.min(20, parseInt(value) || 1));
+    } else {
+      cls[field] = field === 'name' ? value : parseInt(value) || 0;
+    }
+    renderCalculatorClasses();
+  }
+}
+
+function renderCalculatorClasses() {
+  const container = document.getElementById('calc-classes-content');
+  if (!container) return;
+  
+  if (CALC_CLASSES.length === 0) {
+    container.innerHTML = '<div style="color:var(--text-muted);font-style:italic;padding:20px;text-align:center">No custom classes yet. Add one to get started.</div>';
+  } else {
+    container.innerHTML = CALC_CLASSES.map(cls => `
+      <div class="calc-class-block" data-id="${cls.id}">
+        <div class="calc-class-header">
+          <input type="text" class="calc-class-name" value="${cls.name}" onchange="updateCalculatorClass(${cls.id}, 'name', this.value)" placeholder="Class name...">
+          <button class="del-btn" onclick="removeCalculatorClass(${cls.id})" title="Delete">×</button>
+        </div>
+        <div class="calc-class-levels">
+          <label>Levels:</label>
+          <input type="number" min="1" max="20" value="${cls.levels}" onchange="updateCalculatorClass(${cls.id}, 'levels', this.value)">
+        </div>
+        <div class="calc-stats-grid">
+          ${['str', 'vig', 'dex', 'agi', 'mag', 'cha', 'free'].map(s => `
+            <div class="calc-stat-input">
+              <label>${STAT_LABELS[s]}</label>
+              <input type="number" min="0" value="${cls[s]}" onchange="updateCalculatorClass(${cls.id}, '${s}', this.value)">
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `).join('');
+  }
+  
+  renderCalculatorTotals();
+}
+
+function renderCalculatorTotals() {
+  const container = document.getElementById('calc-totals-display');
+  if (!container) return;
+  
+  if (CALC_CLASSES.length === 0) {
+    container.innerHTML = '<div style="color:var(--text-muted);font-style:italic;padding:20px;text-align:center">Add classes to see totals.</div>';
+    return;
+  }
+  
+  // Calculate totals
+  const totals = {};
+  STAT_NAMES.forEach(s => { totals[s] = 0; });
+  
+  CALC_CLASSES.forEach(cls => {
+    STAT_NAMES.forEach(s => {
+      totals[s] += cls[s] * cls.levels;
+    });
+  });
+  
+  // Render totals grid
+  container.innerHTML = `
+    <div class="calc-totals-grid">
+      ${STAT_NAMES.map(s => `
+        <div class="calc-total-block">
+          <div class="calc-total-label">${STAT_LABELS[s]}</div>
+          <div class="calc-total-value">${totals[s]}</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
 function navigate(page) {
   if (!PAGES.includes(page)) page = 'overview';
   PAGES.forEach(p => {

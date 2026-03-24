@@ -38,6 +38,7 @@
     <span class="nav-tab" id="tab-identity">Identity</span>
     <span class="nav-tab" id="tab-relationships">Relationships</span>
     <span class="nav-tab" id="tab-chronicle">Chronicle</span>
+    <span class="nav-tab" id="tab-stat-calc">Stat Calculator</span>
   </nav>
 
   <div class="app-container">
@@ -145,6 +146,22 @@
       </div>
       <div class="card"><div class="card-header" onclick="toggleCard(this)"><span class="card-title">Session Notes</span><span class="card-toggle">▼</span></div>
         <div class="card-body"><textarea class="notes-area" id="notes-area" data-section="notes" placeholder="Session notes, plans, reminders..."></textarea></div>
+      </div>
+    </div>
+
+    <!-- ═══ STAT CALCULATOR ═══ -->
+    <div class="page" id="page-stat-calc">
+      <div class="page-header"><div class="page-title">Stat Calculator</div><div class="page-subtitle">Custom class loadout simulator</div></div>
+      <div class="card"><div class="card-header" onclick="toggleCard(this)"><span class="card-title">Custom Classes</span><span class="card-toggle">▼</span></div>
+        <div class="card-body">
+          <div id="calc-classes-content"></div>
+          <button class="add-btn" onclick="addCalculatorClass()">+ Add Class</button>
+        </div>
+      </div>
+      <div class="card"><div class="card-header" onclick="toggleCard(this)"><span class="card-title">Totals</span><span class="card-toggle">▼</span></div>
+        <div class="card-body">
+          <div id="calc-totals-display"></div>
+        </div>
       </div>
     </div>
 
