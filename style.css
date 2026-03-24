@@ -49,12 +49,13 @@ input.stat-input:focus{border-bottom-color:var(--gold)}
 .add-btn-inline{display:inline-flex;padding:6px 14px;margin-top:8px;border:1px dashed var(--border-subtle);border-radius:2px;background:transparent;color:var(--text-muted);font-family:'Cinzel',serif;font-size:10px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:color .2s,border-color .2s}
 .add-btn-inline:hover{color:var(--gold);border-color:var(--gold-dim)}
 .deletable{position:relative}
-.del-btn{position:absolute;top:6px;right:6px;width:22px;height:22px;border:none;border-radius:50%;background:transparent;color:var(--text-muted);font-size:14px;line-height:22px;text-align:center;cursor:pointer;opacity:0;transition:opacity .15s,color .15s;z-index:5}
+.del-btn{position:absolute;top:6px;left:6px;width:22px;height:22px;border:none;border-radius:50%;background:transparent;color:var(--text-muted);font-size:14px;line-height:22px;text-align:center;cursor:pointer;opacity:0;transition:opacity .15s,color .15s;z-index:5}
 .deletable:hover>.del-btn,.deletable:hover>.gear-toggle>.del-btn-gear{opacity:1}
 .del-btn:hover{color:var(--red-accent);background:rgba(192,57,43,.1)}
-.del-btn-gear{position:absolute;top:10px;right:10px;width:22px;height:22px;border:none;border-radius:50%;background:transparent;color:var(--text-muted);font-size:14px;line-height:22px;text-align:center;cursor:pointer;opacity:0;transition:opacity .15s,color .15s;z-index:5}
+.del-btn-gear{position:absolute;top:10px;left:10px;width:22px;height:22px;border:none;border-radius:50%;background:transparent;color:var(--text-muted);font-size:14px;line-height:22px;text-align:center;cursor:pointer;opacity:0;transition:opacity .15s,color .15s;z-index:5}
 .gear-item:hover .del-btn-gear{opacity:1}
 .del-btn-gear:hover{color:var(--red-accent);background:rgba(192,57,43,.1)}
+.gear-item .del-btn-gear{left:auto;right:10px}
 .disc-del{display:inline;font-size:11px;color:var(--text-muted);cursor:pointer;margin-left:4px;opacity:0;transition:opacity .15s}
 .discipline-tag:hover .disc-del{opacity:1}
 .disc-del:hover{color:var(--red-accent)}
@@ -88,7 +89,7 @@ input.stat-input:focus{border-bottom-color:var(--gold)}
 .discipline-tag{font-family:'Cinzel',serif;font-size:12px;letter-spacing:1px;padding:6px 14px;border:1px solid var(--border-accent);border-radius:2px;color:var(--purple-light);background:rgba(107,76,154,.08)}
 
 /* SKILLS */
-.skill-card{padding:16px 4px 16px 0;border-bottom:1px solid rgba(42,36,64,.4)}
+.skill-card{padding:16px 4px 16px 0;border-bottom:1px solid rgba(42,36,64,.4);position:relative}
 .skill-card:last-child{border-bottom:none}
 .skill-card-header{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
 .skill-slot{font-family:'Cinzel',serif;font-size:11px;color:var(--text-muted);min-width:28px}
@@ -98,7 +99,7 @@ input.stat-input:focus{border-bottom-color:var(--gold)}
 .skill-card-empty .skill-card-name{color:var(--text-muted);font-style:italic;font-weight:400}
 
 /* PERKS */
-.perk-card{padding:20px 4px 20px 20px}
+.perk-card{padding:20px 4px 20px 20px;position:relative}
 .perk-card+.perk-card{border-top:1px solid var(--border-subtle)}
 .perk-name{font-family:'Cinzel',serif;font-size:16px;font-weight:600;color:var(--purple-light);margin-bottom:4px}
 .perk-type{font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px}
@@ -106,7 +107,7 @@ input.stat-input:focus{border-bottom-color:var(--gold)}
 
 /* INVENTORY */
 .gear-category-title{font-family:'Cinzel',serif;font-size:13px;letter-spacing:2.5px;text-transform:uppercase;color:var(--gold-dim);padding:12px 20px;background:var(--bg-section);border-bottom:1px solid var(--border-subtle)}
-.gear-item{border-bottom:1px solid rgba(42,36,64,.3);cursor:grab}
+.gear-item{border-bottom:1px solid rgba(42,36,64,.3);cursor:grab;position:relative}
 .gear-item:last-child{border-bottom:none}
 .gear-item.dragging{opacity:.3;cursor:grabbing}
 .gear-item.drag-over{border-top:2px solid var(--gold);margin-top:-1px}
@@ -132,7 +133,7 @@ input.stat-input:focus{border-bottom-color:var(--gold)}
 .oath-block{border-left:3px solid var(--gold-dim);padding:20px 24px;margin:12px 0;background:rgba(201,168,76,.03);border-radius:0 4px 4px 0;font-style:italic;color:var(--text-secondary);line-height:1.85}
 
 /* RELATIONSHIPS */
-.rel-card{padding:18px 20px}
+.rel-card{padding:18px 20px;position:relative}
 .rel-card+.rel-card{border-top:1px solid rgba(42,36,64,.3)}
 .rel-name{font-family:'Cinzel',serif;font-weight:600;font-size:16px;color:var(--gold);margin-bottom:6px}
 .rel-details{font-size:15px;color:var(--text-secondary);line-height:1.7}
