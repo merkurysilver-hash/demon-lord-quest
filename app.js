@@ -4,6 +4,16 @@
 
 // ──── DEFAULT DATA ────
 
+// Track allocated free points per stat
+let ALLOCATED_FREE_POINTS = {
+  str: 0,
+  vig: 0,
+  dex: 0,
+  agi: 0,
+  mag: 0,
+  cha: 0
+};
+
 const DEF_SKILLS = [
   {name:'Grave-Thread Sovereignty',tier:'III',desc:'Sovereign control over wound-threads — metaphysical sutures binding flesh, spirit, and fate.'},
   {name:'Identify',tier:'II',desc:'Reveals nature, tier, and properties of targets and magical effects. Cannot pierce Uber-tier obfuscation.'},
@@ -129,9 +139,60 @@ function renderStatsDisplay() {
     const mult = cls.perLevel ? cls.levels : 1;
     STAT_NAMES.forEach(s => { totals[s] += cls[s] * mult; });
   });
-  container.innerHTML = STAT_NAMES.map(s =>
-    `<div class="stat-block"><div class="stat-label">${STAT_LABELS[s]}</div><div class="stat-value">${totals[s]}</div></div>`
-  ).join('');
+  
+  // Calculate remaining free points
+  const totalAllocated = Object.values(ALLOCATED_FREE_POINTS).reduce((a, b) => a + b, 0);
+  const remainingFree = totals['free'] - totalAllocated;
+  
+  // Build stat display with +/- for non-free stats, showing allocated amounts
+  const statHtml = STAT_NAMES.slice(0, -1).map(s => {
+    const baseVal = totals[s];
+    const allocated = ALLOCATED_FREE_POINTS[s] || 0;
+    const finalVal = baseVal + allocated;
+    return `<div class="stat-block">
+      <div class="stat-label">${STAT_LABELS[s]}</div>
+      <div class="stat-display">
+        <div class="stat-value">${finalVal}${allocated > 0 ? ` <span class="stat-allocated">(+${allocated})</span>` : ''}</div>
+        <div class="stat-controls">
+          <button class="stat-btn" onclick="modifyFreeStat('${s}', 1)" title="Allocate free point">+</button>
+          <button class="stat-btn" onclick="modifyFreeStat('${s}', -1)" title="Deallocate point" ${allocated === 0 ? 'disabled' : ''}>−</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  
+  // Add free points display at the end
+  const freeHtml = `<div class="stat-block stat-block-free">
+    <div class="stat-label">${STAT_LABELS['free']}</div>
+    <div class="stat-value">${remainingFree}</div>
+  </div>`;
+  
+  container.innerHTML = statHtml + freeHtml;
+}
+
+function modifyFreeStat(stat, delta) {
+  if (!ALLOCATED_FREE_POINTS.hasOwnProperty(stat)) return;
+  
+  // Calculate current free points
+  const totals = {};
+  STAT_NAMES.forEach(s => { totals[s] = 0; });
+  Object.values(CLASS_STATS).forEach(cls => {
+    const mult = cls.perLevel ? cls.levels : 1;
+    STAT_NAMES.forEach(s => { totals[s] += cls[s] * mult; });
+  });
+  
+  const totalAllocated = Object.values(ALLOCATED_FREE_POINTS).reduce((a, b) => a + b, 0);
+  const remainingFree = totals['free'] - totalAllocated;
+  
+  // Can only add if free points available
+  if (delta > 0 && remainingFree <= 0) return;
+  
+  // Can only remove if allocated points exist
+  if (delta < 0 && ALLOCATED_FREE_POINTS[stat] <= 0) return;
+  
+  ALLOCATED_FREE_POINTS[stat] += delta;
+  renderStatsDisplay();
+  scheduleSave('allocatedFreePoints');
 }
 
 function buildClasses(container) {
@@ -551,7 +612,7 @@ const CONFIG_KEY = 'raven_fb_cfg';
 const LOCAL_KEY = 'raven_sheet_v4';
 let db = null, sheetRef = null, isOnline = false, activeSection = null, suppressRemote = {}, saveTimers = {};
 
-const ALL_KEYS = ['header/charName','header/charTitle','header/charRace','classLevels','classes','disciplines','skills','perks','gear','personality','oath','echo','story','relationships','notes'];
+const ALL_KEYS = ['header/charName','header/charTitle','header/charRace','classLevels','allocatedFreePoints','classes','disciplines','skills','perks','gear','personality','oath','echo','story','relationships','notes'];
 
 document.addEventListener('focusin', e => {
   const sec = e.target.closest('[data-section]');
@@ -569,6 +630,9 @@ function getVal(key) {
     const data = {};
     Object.entries(CLASS_STATS).forEach(([k, c]) => { data[k] = c.levels; });
     return JSON.stringify(data);
+  }
+  if (key === 'allocatedFreePoints') {
+    return JSON.stringify(ALLOCATED_FREE_POINTS);
   }
   const fld = document.querySelector(`[data-field="${key}"]`);
   if (fld) return fld.innerHTML;
@@ -592,6 +656,18 @@ function setVal(key, val) {
         if (CLASS_STATS[k]) CLASS_STATS[k].levels = lvl;
       });
       buildStatBreakdown();
+    } catch(e) {}
+    return;
+  }
+  if (key === 'allocatedFreePoints') {
+    try {
+      const data = typeof val === 'string' ? JSON.parse(val) : val;
+      Object.entries(data).forEach(([stat, allocated]) => {
+        if (ALLOCATED_FREE_POINTS.hasOwnProperty(stat)) {
+          ALLOCATED_FREE_POINTS[stat] = allocated;
+        }
+      });
+      renderStatsDisplay();
     } catch(e) {}
     return;
   }
