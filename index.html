@@ -10,46 +10,26 @@
 </head>
 <body>
 
-<!-- ═══════ SETUP ═══════ -->
 <div class="setup-panel" id="setup-panel" style="display:none;">
   <h1>Firebase Setup</h1>
-  <p>Real-time sync between devices. One-time setup — about 5 minutes.</p>
+  <p>Real-time sync. One-time setup — about 5 minutes.</p>
   <h2>Step 1 — Create a Firebase Project</h2>
-  <ol>
-    <li>Go to <a href="https://console.firebase.google.com/" target="_blank">console.firebase.google.com</a></li>
-    <li>Click <strong>Add project</strong>, name it anything</li>
-    <li>Disable Google Analytics, click <strong>Create project</strong></li>
-  </ol>
+  <ol><li>Go to <a href="https://console.firebase.google.com/" target="_blank">console.firebase.google.com</a></li><li>Click <strong>Add project</strong>, disable Analytics, create</li></ol>
   <h2>Step 2 — Create a Realtime Database</h2>
-  <ol>
-    <li><strong>Build → Realtime Database → Create Database</strong></li>
-    <li>Choose any location, select <strong>Start in test mode</strong></li>
-  </ol>
-  <h2>Step 3 — Get Your Config</h2>
-  <ol>
-    <li><strong>Project Settings</strong> (gear icon) → <strong>Your apps</strong> → click <code>&lt;/&gt;</code> Web</li>
-    <li>Register an app, skip hosting, copy these values:</li>
-  </ol>
+  <ol><li><strong>Build → Realtime Database → Create Database</strong></li><li>Any location, <strong>Start in test mode</strong></li></ol>
+  <h2>Step 3 — Get Config</h2>
+  <ol><li><strong>Project Settings → Your apps → Web (&lt;/&gt;)</strong></li><li>Register app, copy these values:</li></ol>
   <input class="setup-input" id="cfg-apiKey" placeholder="apiKey">
   <input class="setup-input" id="cfg-authDomain" placeholder="authDomain">
   <input class="setup-input" id="cfg-databaseURL" placeholder="databaseURL (required)">
   <input class="setup-input" id="cfg-projectId" placeholder="projectId">
   <button class="setup-btn" onclick="saveConfig()">Connect</button>
   <div class="setup-error" id="setup-error"></div>
-  <span class="setup-skip" onclick="skipSetup()">Skip — use offline only</span>
+  <span class="setup-skip" onclick="skipSetup()">Skip — offline only</span>
 </div>
 
-<!-- ═══════ APP ═══════ -->
 <div id="app-wrapper" style="display:none;">
-
-  <!-- Status Bar -->
-  <div class="status-bar" id="status-bar">
-    <span class="status-dot" id="status-dot"></span>
-    <span class="status-label" id="status-label">Connecting...</span>
-    <span class="save-indicator" id="save-indicator">&nbsp;</span>
-  </div>
-
-  <!-- Navigation -->
+  <div class="status-bar"><span class="status-dot" id="status-dot"></span><span class="status-label" id="status-label">Connecting...</span><span class="save-indicator" id="save-indicator">&nbsp;</span></div>
   <nav class="nav-bar">
     <span class="nav-tab" id="tab-overview">Overview</span>
     <span class="nav-tab" id="tab-skills">Skills</span>
@@ -65,186 +45,100 @@
     <!-- ═══ OVERVIEW ═══ -->
     <div class="page" id="page-overview">
       <div class="char-banner">
+        <img src="raven-portrait.png" alt="Raven Nightingale" class="char-portrait">
         <div class="char-name" contenteditable="true" data-field="header/charName">Raven Nightingale</div>
         <div class="char-title-main" contenteditable="true" data-field="header/charTitle">The Woundwright</div>
         <div class="char-race" contenteditable="true" data-field="header/charRace">Half-Elf</div>
       </div>
 
-      <div class="card" id="card-stats">
-        <div class="card-header" onclick="toggleCard(this)">
-          <span class="card-title">Stats</span><span class="card-toggle">▼</span>
-        </div>
+      <div class="card"><div class="card-header" onclick="toggleCard(this)"><span class="card-title">Stats</span><span class="card-toggle">▼</span></div>
         <div class="card-body">
-          <div class="stats-grid" data-section="stats">
-            <div class="stat-block"><div class="stat-label">Strength</div><input class="stat-input" type="number" value="339" data-stat="str"></div>
-            <div class="stat-block"><div class="stat-label">Vigor</div><input class="stat-input" type="number" value="325" data-stat="vig"></div>
-            <div class="stat-block"><div class="stat-label">Dexterity</div><input class="stat-input" type="number" value="333" data-stat="dex"></div>
-            <div class="stat-block"><div class="stat-label">Agility</div><input class="stat-input" type="number" value="338" data-stat="agi"></div>
-            <div class="stat-block"><div class="stat-label">Magic</div><input class="stat-input" type="number" value="403" data-stat="mag"></div>
-            <div class="stat-block"><div class="stat-label">Charisma</div><input class="stat-input" type="number" value="401" data-stat="cha"></div>
-            <div class="stat-block"><div class="stat-label">Free Points</div><input class="stat-input" type="number" value="0" data-stat="free"></div>
-          </div>
+          <div data-section="stats" id="stats-content"></div>
+          <button class="add-btn" onclick="addStat()">+ Add Stat</button>
         </div>
       </div>
 
-      <div class="card" id="card-classes">
-        <div class="card-header" onclick="toggleCard(this)">
-          <span class="card-title">Classes</span><span class="card-toggle">▼</span>
-        </div>
-        <div class="card-body" data-section="classes">
-          <div class="class-row"><div class="class-name-label" contenteditable="true">‹Demon Lord of Pride›</div><div class="class-tier" contenteditable="true">Uber (2)</div><div class="class-level">Lv. <span contenteditable="true">3</span></div><div class="class-desc" contenteditable="true">The force of upheaval, dominion, and sovereign dread. First in centuries.</div></div>
-          <div class="class-row"><div class="class-name-label" contenteditable="true">‹Eclipse Princess›</div><div class="class-tier" contenteditable="true">S (1)</div><div class="class-level">Lv. <span contenteditable="true">11</span></div><div class="class-desc" contenteditable="true">Echo's class. Umbral Magic, Necromancy, Rulership. Most developed.</div></div>
-          <div class="class-row"><div class="class-name-label" contenteditable="true">‹Epochbreaker›</div><div class="class-tier" contenteditable="true">S (1)</div><div class="class-level">Lv. <span contenteditable="true">4</span></div><div class="class-desc" contenteditable="true">Chronomancy swordsman. Time magic and advanced swordsmanship.</div></div>
-          <div class="class-row"><div class="class-name-label class-locked">Secondary Slot</div><div class="class-tier class-locked">Locked</div><div class="class-level class-locked">—</div></div>
-          <div class="class-row"><div class="class-name-label class-locked">Secondary Slot</div><div class="class-tier class-locked">Locked</div><div class="class-level class-locked">—</div></div>
+      <div class="card"><div class="card-header" onclick="toggleCard(this)"><span class="card-title">Classes</span><span class="card-toggle">▼</span></div>
+        <div class="card-body">
+          <div data-section="classes" id="classes-content"></div>
+          <button class="add-btn" onclick="addClass()">+ Add Class</button>
         </div>
       </div>
 
-      <div class="card" id="card-disciplines">
-        <div class="card-header" onclick="toggleCard(this)">
-          <span class="card-title">Magical Disciplines</span><span class="card-toggle">▼</span>
-        </div>
-        <div class="card-body" data-section="disciplines">
-          <div class="discipline-list">
-            <span class="discipline-tag" contenteditable="true">Murder Magic</span>
-            <span class="discipline-tag" contenteditable="true">Death Magic</span>
-            <span class="discipline-tag" contenteditable="true">Fate Magic</span>
-            <span class="discipline-tag" contenteditable="true">Umbral Magic</span>
-            <span class="discipline-tag" contenteditable="true">Swordsmanship</span>
-            <span class="discipline-tag" contenteditable="true">Thaumaturgy</span>
-            <span class="discipline-tag" contenteditable="true">Abjuration</span>
-          </div>
+      <div class="card"><div class="card-header" onclick="toggleCard(this)"><span class="card-title">Magical Disciplines</span><span class="card-toggle">▼</span></div>
+        <div class="card-body">
+          <div data-section="disciplines" id="disciplines-content"></div>
+          <button class="add-btn" onclick="addDiscipline()">+ Add Discipline</button>
         </div>
       </div>
     </div>
 
     <!-- ═══ SKILLS ═══ -->
     <div class="page" id="page-skills">
-      <div class="page-header">
-        <div class="page-title">Skills</div>
-        <div class="page-subtitle">30 of 32 slots filled</div>
-      </div>
-      <div class="card">
-        <div class="card-body" data-section="skills" id="skills-list"></div>
-      </div>
+      <div class="page-header"><div class="page-title">Skills</div><div class="page-subtitle">Active skill slots</div></div>
+      <div class="card"><div class="card-body">
+        <div data-section="skills" id="skills-content"></div>
+        <button class="add-btn" onclick="addSkill()">+ Add Skill Slot</button>
+      </div></div>
     </div>
 
     <!-- ═══ PERKS ═══ -->
     <div class="page" id="page-perks">
-      <div class="page-header">
-        <div class="page-title">Perks</div>
-        <div class="page-subtitle">Passive abilities outside skill slots</div>
-      </div>
-      <div class="card">
-        <div class="card-body" data-section="perks" id="perks-list"></div>
-      </div>
+      <div class="page-header"><div class="page-title">Perks</div><div class="page-subtitle">Passive abilities outside skill slots</div></div>
+      <div class="card"><div class="card-body">
+        <div data-section="perks" id="perks-content"></div>
+        <button class="add-btn" onclick="addPerk()">+ Add Perk</button>
+      </div></div>
     </div>
 
     <!-- ═══ INVENTORY ═══ -->
     <div class="page" id="page-inventory">
-      <div class="page-header">
-        <div class="page-title">Inventory</div>
-        <div class="page-subtitle">Gear, equipment, and curiosities</div>
-      </div>
+      <div class="page-header"><div class="page-title">Inventory</div><div class="page-subtitle">Gear, equipment, and curiosities</div></div>
       <div class="card" style="overflow:visible;">
-        <div data-section="gear" id="gear-list"></div>
+        <div data-section="gear" id="gear-content"></div>
+        <div style="padding:8px 20px 16px;">
+          <button class="add-btn" onclick="addGearItem()">+ Add Item</button>
+        </div>
       </div>
     </div>
 
     <!-- ═══ IDENTITY ═══ -->
     <div class="page" id="page-identity">
-      <div class="page-header">
-        <div class="page-title">Identity</div>
-        <div class="page-subtitle">Who she is, who she swore to be, and the other her</div>
+      <div class="page-header"><div class="page-title">Identity</div><div class="page-subtitle">Who she is, who she swore to be, and the other her</div></div>
+      <div class="card"><div class="card-header" onclick="toggleCard(this)"><span class="card-title">Personality</span><span class="card-toggle">▼</span></div>
+        <div class="card-body" data-section="personality"><div class="prose" contenteditable="true">
+          <p><strong>What she knows about herself:</strong></p><p>She <strong>fears her destiny.</strong> The title of ‹Demon Lord› carries centuries of blood.</p><p>She <strong>fears the Hero.</strong> Not from cowardice, but from clarity.</p><p>She is <strong>petty.</strong> Small grievances stick.</p><p>She is <strong>contrary for the sake of being contrary.</strong></p><p>She is <strong>not as worldly as she pretends.</strong></p><p>She is still <strong>deciding what it means to be the ‹Demon Lord›.</strong></p><p><strong>What she shows the world:</strong> A strong front. Spirited. Driven by sentiment over logic.</p><p><strong>Core want:</strong> To be <strong>free.</strong> Not a piece on someone else's board.</p>
+        </div></div>
       </div>
-
-      <div class="card">
-        <div class="card-header" onclick="toggleCard(this)">
-          <span class="card-title">Personality</span><span class="card-toggle">▼</span>
-        </div>
-        <div class="card-body" data-section="personality">
-          <div class="prose" contenteditable="true">
-            <p><strong>What she knows about herself:</strong></p>
-            <p>She <strong>fears her destiny.</strong> The title of ‹Demon Lord› carries centuries of blood. She knows what is coming.</p>
-            <p>She <strong>fears the Hero.</strong> Not from cowardice, but from clarity. The fate of Demon Lord and Hero is specific and personal.</p>
-            <p>She is <strong>petty.</strong> Small grievances stick. She can hold a grudge over something trivial while being capable of profound compassion.</p>
-            <p>She is <strong>contrary for the sake of being contrary.</strong> Tell her what to do and her first instinct is the opposite.</p>
-            <p>She is <strong>not as worldly as she pretends.</strong> A sheltered princess who ran away from home, doing her best. The gap between the performance and the reality is a source of both comedy and genuine vulnerability.</p>
-            <p>She is still <strong>deciding what it means to be the ‹Demon Lord›.</strong> She knows what it has meant. She does not yet know what it will mean when it is <em>her.</em></p>
-            <p><strong>What she shows the world:</strong></p>
-            <p>A <strong>strong front.</strong> Fear and weakness are not freely shown. She is not too proud for vulnerability with those she trusts — with Ascenia, Kaela, and Fel, the armor has begun to come down. She is <strong>spirited</strong> — alive in a way that feels genuine. She is driven more by <strong>sentiment than logic or the pursuit of power.</strong></p>
-            <p><strong>Her core want:</strong> Raven wants to be <strong>free.</strong> Not philosophically — specifically. Not a piece on someone else's board. Not her father's, not Gray's, not the System's, not the world's inherited story of what a ‹Demon Lord› must be.</p>
-          </div>
-        </div>
+      <div class="card"><div class="card-header" onclick="toggleCard(this)"><span class="card-title">The Oath</span><span class="card-toggle">▼</span></div>
+        <div class="card-body" data-section="oath"><div class="oath-block" contenteditable="true">"For my truth it is this. I am the Demon Lord. Saddled with a destiny I did not want. And I worry that I will never deserve to be called 'good' because of it."<br><br><em>I exhale slowly. And then take another breath.</em><br><br>"I vow it here and now: though I was born to shatter this world, I shall love it nonetheless. I will stand defiant before gods and men alike, wielding my strength not to tear asunder, but to mend. This world, with all its flaws and beauty, will know my name — not as the harbinger of destruction, but as its savior. I shall forge this world a better future, and I shall suffer neither man nor god to change my course."</div></div>
       </div>
-
-      <div class="card">
-        <div class="card-header" onclick="toggleCard(this)">
-          <span class="card-title">The Oath</span><span class="card-toggle">▼</span>
-        </div>
-        <div class="card-body" data-section="oath">
-          <div class="oath-block" contenteditable="true">
-            "For my truth it is this. I am the Demon Lord. Saddled with a destiny I did not want. And I worry that I will never deserve to be called 'good' because of it."<br><br>
-            <em>I exhale slowly. And then take another breath.</em><br><br>
-            "I vow it here and now: though I was born to shatter this world, I shall love it nonetheless. I will stand defiant before gods and men alike, wielding my strength not to tear asunder, but to mend. This world, with all its flaws and beauty, will know my name — not as the harbinger of destruction, but as its savior. I shall forge this world a better future, and I shall suffer neither man nor god to change my course."
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-header" onclick="toggleCard(this)">
-          <span class="card-title">Echo — The Eclipse Princess</span><span class="card-toggle">▼</span>
-        </div>
-        <div class="card-body" data-section="echo">
-          <div class="prose" contenteditable="true">
-            <p>Echo is the second soul inhabiting Raven's body, born from ‹Shattered Self›. She is <strong>Raven as she would have been</strong> had she never received the ‹Demon Lord› class — had she grown into the ‹Eclipse Princess› that might otherwise have been her birthright.</p>
-            <p>She is not a separate person. She is a <strong>divergent self</strong> — the same root, a different branch.</p>
-            <p>Where Raven is warm, alive, and sentiment-driven, Echo is <strong>colder</strong> — more reserved, less given to open emotion. <strong>More royal</strong> — the bearing of a princess who grew up performing royalty rather than running from it. <strong>More distant</strong> — where Raven reaches toward people, Echo maintains careful space. <strong>More logical</strong> — less driven by feeling, more by calculation and considered principle.</p>
-            <p>They are not enemies. They are not perfectly harmonious. They are two women who know each other more intimately than anyone ever could — because they are each other.</p>
-            <p>Echo can speak into Raven's mind at any time regardless of manifestation.</p>
-          </div>
-        </div>
+      <div class="card"><div class="card-header" onclick="toggleCard(this)"><span class="card-title">Echo — The Eclipse Princess</span><span class="card-toggle">▼</span></div>
+        <div class="card-body" data-section="echo"><div class="prose" contenteditable="true">
+          <p>Echo is the second soul inhabiting Raven's body, born from ‹Shattered Self›. She is <strong>Raven as she would have been</strong> without the ‹Demon Lord› class.</p><p>A <strong>divergent self</strong> — same root, different branch. <strong>Colder. More royal. More distant. More logical.</strong></p><p>They are not enemies. They are not perfectly harmonious. They are two women who know each other more intimately than anyone ever could.</p><p>Echo can speak into Raven's mind at any time.</p>
+        </div></div>
       </div>
     </div>
 
     <!-- ═══ RELATIONSHIPS ═══ -->
     <div class="page" id="page-relationships">
-      <div class="page-header">
-        <div class="page-title">Relationships</div>
-        <div class="page-subtitle">Friends, family, and those who matter</div>
-      </div>
-      <div class="card">
-        <div class="card-body" data-section="relationships" id="rels-list"></div>
-      </div>
+      <div class="page-header"><div class="page-title">Relationships</div><div class="page-subtitle">Friends, family, and those who matter</div></div>
+      <div class="card"><div class="card-body">
+        <div data-section="relationships" id="rels-content"></div>
+        <button class="add-btn" onclick="addRelationship()">+ Add Character</button>
+      </div></div>
     </div>
 
     <!-- ═══ CHRONICLE ═══ -->
     <div class="page" id="page-chronicle">
-      <div class="page-header">
-        <div class="page-title">Chronicle</div>
-        <div class="page-subtitle">The story so far</div>
+      <div class="page-header"><div class="page-title">Chronicle</div><div class="page-subtitle">The story so far</div></div>
+      <div class="card"><div class="card-header" onclick="toggleCard(this)"><span class="card-title">Story</span><span class="card-toggle">▼</span></div>
+        <div class="card-body" data-section="story"><div class="prose" contenteditable="true">
+          <p><strong>The Night of the Class Assignment</strong><br>On her fifteenth birthday, the System assigned her ‹Demon Lord›. She fled into the Labyrinth of Murder and swore her oath.</p><p><strong>The Labyrinth of Thirsting Joy</strong><br>Gained ‹Shattered Self› and Echo. Ascended to ‹Demon Lord of Pride (2)›. Received ‹Epochbreaker (1)›.</p><p><strong>Scholomance</strong><br>Enrolled concealed. Befriended Ascenia, Kaela, and Fel.</p><p><strong>Current Chapter</strong><br>First floor of the Crystal Labyrinth — Dungeoneering 101 final.</p>
+        </div></div>
       </div>
-      <div class="card">
-        <div class="card-header" onclick="toggleCard(this)">
-          <span class="card-title">Story</span><span class="card-toggle">▼</span>
-        </div>
-        <div class="card-body" data-section="story">
-          <div class="prose" contenteditable="true">
-            <p><strong>The Night of the Class Assignment</strong><br>On Raven's fifteenth birthday, the System assigned her ‹Demon Lord› — the first in centuries. Knowing her father would use it, she fled into the Labyrinth of Murder and swore her oath: not to destroy the world, but to protect all that made it beautiful.</p>
-            <p><strong>The Labyrinth of Thirsting Joy</strong><br>Raven confronted the manifestation of her inner desire and overcame it through compassion. She gained ‹Shattered Self› and Echo, forced the Incarnation of Pride to submit, ascended to ‹Demon Lord of Pride (2)›, and received ‹Epochbreaker (1)›.</p>
-            <p><strong>Scholomance — The Arcanum</strong><br>Enrolled with ‹Demon Lord› concealed. Befriended Ascenia, Kaela, and Fel. Spent several months building genuine friendships and deepening her magical studies.</p>
-            <p><strong>Current Chapter</strong><br>Partway through the first floor of the Crystal Labyrinth for the Dungeoneering 101 final.</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-header" onclick="toggleCard(this)">
-          <span class="card-title">Session Notes</span><span class="card-toggle">▼</span>
-        </div>
-        <div class="card-body" data-section="notes">
-          <textarea class="notes-area" id="notes-area" placeholder="Add session notes, reminders, plans, or anything else here..."></textarea>
-        </div>
+      <div class="card"><div class="card-header" onclick="toggleCard(this)"><span class="card-title">Session Notes</span><span class="card-toggle">▼</span></div>
+        <div class="card-body"><textarea class="notes-area" id="notes-area" data-section="notes" placeholder="Session notes, plans, reminders..."></textarea></div>
       </div>
     </div>
 
