@@ -53,8 +53,7 @@
 
       <div class="card"><div class="card-header" onclick="toggleCard(this)"><span class="card-title">Stats</span><span class="card-toggle">▼</span></div>
         <div class="card-body">
-          <div data-section="stats" id="stats-content"></div>
-          <button class="add-btn" onclick="addStat()">+ Add Stat</button>
+          <div class="stats-grid" id="stats-display"></div>
         </div>
       </div>
 
@@ -69,6 +68,13 @@
         <div class="card-body">
           <div data-section="disciplines" id="disciplines-content"></div>
           <button class="add-btn" onclick="addDiscipline()">+ Add Discipline</button>
+        </div>
+      </div>
+
+      <div class="card"><div class="card-header" onclick="toggleCard(this)"><span class="card-title">System Reference</span><span class="card-toggle">▼</span></div>
+        <div class="card-body">
+          <div id="system-ref"></div>
+          <div id="stat-budget" style="margin-top:16px;"></div>
         </div>
       </div>
     </div>
