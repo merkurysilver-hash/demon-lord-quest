@@ -135,11 +135,10 @@ function buildClasses(container) {
     {n:'‹Demon Lord of Pride›',t:'Uber (2)',l:'3',d:'The force of upheaval, dominion, and sovereign dread.'},
     {n:'‹Eclipse Princess›',t:'S (1)',l:'11',d:"Echo's class. Umbral Magic, Necromancy, Rulership."},
     {n:'‹Epochbreaker›',t:'S (1)',l:'4',d:'Chronomancy swordsman. Time magic and advanced swordsmanship.'},
-    {n:'Secondary Slot',t:'Locked',l:'—',d:'',locked:true},
-    {n:'Secondary Slot',t:'Locked',l:'—',d:'',locked:true},
-  ].map(c => c.locked
-    ? `<div class="class-row"><div class="class-name-label class-locked">${c.n}</div><div class="class-tier class-locked">${c.t}</div><div class="class-level class-locked">${c.l}</div></div>`
-    : `<div class="class-row deletable">${makeDelBtn('classes')}<div class="class-name-label" contenteditable="true">${c.n}</div><div class="class-tier" contenteditable="true">${c.t}</div><div class="class-level">Lv. <span contenteditable="true">${c.l}</span></div><div class="class-desc" contenteditable="true">${c.d}</div></div>`
+    {n:'Locked',t:'—',l:'—',d:'Unlock by maxing a primary class.'},
+    {n:'Locked',t:'—',l:'—',d:'Unlock by maxing a primary class.'},
+  ].map(c =>
+    `<div class="class-row deletable">${makeDelBtn('classes')}<div class="class-name-label" contenteditable="true">${c.n}</div><div class="class-tier" contenteditable="true">${c.t}</div><div class="class-level" contenteditable="true">${c.l === '—' ? '—' : 'Lv. ' + c.l}</div><div class="class-desc" contenteditable="true">${c.d}</div></div>`
   ).join('');
 }
 
@@ -151,11 +150,13 @@ function buildDisciplines(container) {
 }
 
 function buildSkills(container) {
-  container.innerHTML = DEF_SKILLS.map((s, i) =>
-    s.name
-      ? `<div class="skill-card deletable">${makeDelBtn('skills')}<div class="skill-card-header"><span class="skill-slot">${i+1}.</span><span class="skill-card-name" contenteditable="true">‹${s.name}›</span><span class="skill-card-tier" contenteditable="true">${s.tier}</span></div><div class="skill-card-desc" contenteditable="true">${s.desc}</div></div>`
-      : `<div class="skill-card skill-card-empty deletable">${makeDelBtn('skills')}<div class="skill-card-header"><span class="skill-slot">${i+1}.</span><span class="skill-card-name" contenteditable="true">Empty Slot</span><span class="skill-card-tier">—</span></div></div>`
-  ).join('');
+  container.innerHTML = DEF_SKILLS.map((s, i) => {
+    const name = s.name ? `‹${s.name}›` : 'Empty Slot';
+    const tier = s.tier || '—';
+    const desc = s.desc || 'Click to add a description...';
+    const empty = s.name ? '' : ' skill-card-empty';
+    return `<div class="skill-card${empty} deletable">${makeDelBtn('skills')}<div class="skill-card-header"><span class="skill-slot">${i+1}.</span><span class="skill-card-name" contenteditable="true">${name}</span><span class="skill-card-tier" contenteditable="true">${tier}</span></div><div class="skill-card-desc" contenteditable="true">${desc}</div></div>`;
+  }).join('');
 }
 
 function buildPerks(container) {
@@ -217,7 +218,7 @@ function addClass() {
   const c = document.getElementById('classes-content');
   const row = document.createElement('div');
   row.className = 'class-row deletable';
-  row.innerHTML = `${makeDelBtn('classes')}<div class="class-name-label" contenteditable="true">‹New Class›</div><div class="class-tier" contenteditable="true">Tier</div><div class="class-level">Lv. <span contenteditable="true">1</span></div><div class="class-desc" contenteditable="true">Description...</div>`;
+  row.innerHTML = `${makeDelBtn('classes')}<div class="class-name-label" contenteditable="true">‹New Class›</div><div class="class-tier" contenteditable="true">Tier</div><div class="class-level" contenteditable="true">Lv. 1</div><div class="class-desc" contenteditable="true">Description...</div>`;
   c.appendChild(row);
   row.querySelector('.class-name-label').focus();
   scheduleSave('classes');
