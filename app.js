@@ -2,12 +2,17 @@
 // RAVEN QUEST — CHARACTER SHEET APP v2
 // ═══════════════════════════════════════
 
-// ──── DEFAULT DATA (used for initial build only) ────
+// ──── DEFAULT DATA ────
 
-const DEF_STATS = [
-  {label:'Strength',val:339},{label:'Vigor',val:325},{label:'Dexterity',val:333},
-  {label:'Agility',val:338},{label:'Magic',val:403},{label:'Charisma',val:401},{label:'Free Points',val:0}
-];
+// Track allocated free points per stat
+let ALLOCATED_FREE_POINTS = {
+  str: 0,
+  vig: 0,
+  dex: 0,
+  agi: 0,
+  mag: 0,
+  cha: 0
+};
 
 const DEF_SKILLS = [
   {name:'Grave-Thread Sovereignty',tier:'III',desc:'Sovereign control over wound-threads — metaphysical sutures binding flesh, spirit, and fate.'},
@@ -110,7 +115,7 @@ function removeItem(btn, section) {
   const item = btn.closest('.deletable, .stat-block, .class-row, .skill-card, .perk-card, .gear-item, .rel-card, .discipline-tag');
   if (!item) return;
   item.style.opacity = '0.3';
-  if (confirm('Delete this item?')) {
+  if (confirm('Are you sure you want to delete this?')) {
     item.remove();
     scheduleSave(section);
   } else {
@@ -124,22 +129,92 @@ function renumberSkills() {
 
 // ──── BUILD FUNCTIONS ────
 
-function buildStats(container) {
-  container.innerHTML = '<div class="stats-grid">' + DEF_STATS.map(s =>
-    `<div class="stat-block deletable">${makeDelBtn('stats')}<div class="stat-label" contenteditable="true">${s.label}</div><input class="stat-input" type="number" value="${s.val}"></div>`
-  ).join('') + '</div>';
+function renderStatsDisplay() {
+  const container = document.getElementById('stats-display');
+  if (!container) return;
+  // Calculate totals from CLASS_STATS
+  const totals = {};
+  STAT_NAMES.forEach(s => { totals[s] = 0; });
+  Object.values(CLASS_STATS).forEach(cls => {
+    const mult = cls.perLevel ? cls.levels : 1;
+    STAT_NAMES.forEach(s => { totals[s] += cls[s] * mult; });
+  });
+  
+  // Calculate remaining free points
+  const totalAllocated = Object.values(ALLOCATED_FREE_POINTS).reduce((a, b) => a + b, 0);
+  const remainingFree = totals['free'] - totalAllocated;
+  
+  // Build stat display with +/- for non-free stats, showing allocated amounts
+  const statHtml = STAT_NAMES.slice(0, -1).map(s => {
+    const baseVal = totals[s];
+    const allocated = ALLOCATED_FREE_POINTS[s] || 0;
+    const finalVal = baseVal + allocated;
+    return `<div class="stat-block">
+      <div class="stat-label">${STAT_LABELS[s]}</div>
+      <div class="stat-display">
+        <div class="stat-value">${finalVal}${allocated > 0 ? ` <span class="stat-allocated">(+${allocated})</span>` : ''}</div>
+        <div class="stat-controls">
+          <button class="stat-btn" onclick="modifyFreeStat('${s}', 1)" title="Allocate free point">+</button>
+          <button class="stat-btn" onclick="modifyFreeStat('${s}', -1)" title="Deallocate point" ${allocated === 0 ? 'disabled' : ''}>−</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  
+  // Add free points display at the end
+  const freeHtml = `<div class="stat-block stat-block-free">
+    <div class="stat-label">${STAT_LABELS['free']}</div>
+    <div class="stat-value">${remainingFree}</div>
+  </div>`;
+  
+  container.innerHTML = statHtml + freeHtml;
+}
+
+function modifyFreeStat(stat, delta) {
+  if (!ALLOCATED_FREE_POINTS.hasOwnProperty(stat)) return;
+  
+  // Calculate current free points
+  const totals = {};
+  STAT_NAMES.forEach(s => { totals[s] = 0; });
+  Object.values(CLASS_STATS).forEach(cls => {
+    const mult = cls.perLevel ? cls.levels : 1;
+    STAT_NAMES.forEach(s => { totals[s] += cls[s] * mult; });
+  });
+  
+  const totalAllocated = Object.values(ALLOCATED_FREE_POINTS).reduce((a, b) => a + b, 0);
+  const remainingFree = totals['free'] - totalAllocated;
+  
+  // Can only add if free points available
+  if (delta > 0 && remainingFree <= 0) return;
+  
+  // Can only remove if allocated points exist
+  if (delta < 0 && ALLOCATED_FREE_POINTS[stat] <= 0) return;
+  
+  ALLOCATED_FREE_POINTS[stat] += delta;
+  renderStatsDisplay();
+  scheduleSave('allocatedFreePoints');
 }
 
 function buildClasses(container) {
+  const classMap = {
+    '‹Demon Lord of Pride›': 'demon-lord-2',
+    '‹Eclipse Princess›': 'eclipse-1',
+    '‹Epochbreaker›': 'epochbreaker-1',
+  };
+  
   container.innerHTML = [
-    {n:'‹Demon Lord of Pride›',t:'Uber (2)',l:'3',d:'The force of upheaval, dominion, and sovereign dread.'},
-    {n:'‹Eclipse Princess›',t:'S (1)',l:'11',d:"Echo's class. Umbral Magic, Necromancy, Rulership."},
-    {n:'‹Epochbreaker›',t:'S (1)',l:'4',d:'Chronomancy swordsman. Time magic and advanced swordsmanship.'},
-    {n:'Locked',t:'—',l:'—',d:'Unlock by maxing a primary class.'},
-    {n:'Locked',t:'—',l:'—',d:'Unlock by maxing a primary class.'},
-  ].map(c =>
-    `<div class="class-row deletable">${makeDelBtn('classes')}<div class="class-name-label" contenteditable="true">${c.n}</div><div class="class-tier" contenteditable="true">${c.t}</div><div class="class-level" contenteditable="true">${c.l === '—' ? '—' : 'Lv. ' + c.l}</div><div class="class-desc" contenteditable="true">${c.d}</div></div>`
-  ).join('');
+    {n:'‹Demon Lord of Pride›',t:'Uber (2)',d:'The force of upheaval, dominion, and sovereign dread.'},
+    {n:'‹Eclipse Princess›',t:'S (1)',d:"Echo's class. Umbral Magic, Necromancy, Rulership."},
+    {n:'‹Epochbreaker›',t:'S (1)',d:'Chronomancy swordsman. Time magic and advanced swordsmanship.'},
+    {n:'Locked',t:'—',d:'Unlock by maxing a primary class.'},
+    {n:'Locked',t:'—',d:'Unlock by maxing a primary class.'},
+  ].map(c => {
+    const key = classMap[c.n];
+    const isLocked = c.n === 'Locked';
+    const currentLevel = key && CLASS_STATS[key] ? CLASS_STATS[key].levels : 0;
+    const levelHtml = isLocked ? '—' : `<div class="class-level-display"><button class="level-btn" onclick="changeClassLevel('${key}', -1)">−</button><span class="level-value">Lv. <span class="level-num">${currentLevel}</span></span><button class="level-btn" onclick="changeClassLevel('${key}', 1)">+</button></div>`;
+    return `<div class="class-row"><div class="class-name-label" contenteditable="true">${c.n}</div><div class="class-tier" contenteditable="true">${c.t}</div>${levelHtml}<div class="class-desc" contenteditable="true">${c.d}</div></div>`;
+  }).join('');
 }
 
 function buildDisciplines(container) {
@@ -187,32 +262,158 @@ function buildRels(container) {
 }
 
 function initAllContent() {
-  buildStats(document.getElementById('stats-content'));
   buildClasses(document.getElementById('classes-content'));
   // Disciplines - build inline since it uses special delete
   const dc = document.getElementById('disciplines-content');
   dc.innerHTML = '<div class="discipline-list">' +
     ['Murder Magic','Death Magic','Fate Magic','Umbral Magic','Swordsmanship','Thaumaturgy','Abjuration']
-      .map(d => `<span class="discipline-tag" contenteditable="true">${d}<span class="disc-del" onclick="this.parentElement.remove();scheduleSave('disciplines')">×</span></span>`).join('') +
+      .map(d => `<span class="discipline-tag" contenteditable="true">${d}<span class="disc-del" onclick="if(confirm('Are you sure you want to delete this?')){this.parentElement.remove();scheduleSave('disciplines')}">×</span></span>`).join('') +
     '</div>';
   buildSkills(document.getElementById('skills-content'));
   buildPerks(document.getElementById('perks-content'));
   buildGear(document.getElementById('gear-content'));
   buildRels(document.getElementById('rels-content'));
+  buildSystemRef();
+  renderCalculatorClasses();
+}
+
+// ──── SYSTEM REFERENCE ────
+
+const TIER_TABLE = [
+  {tier:'E',points:3},{tier:'D',points:5},{tier:'C',points:10},{tier:'B',points:20},
+  {tier:'A',points:30},{tier:'S',points:40},{tier:'Uber',points:65}
+];
+
+// Per-level stat distributions for each class period
+const STAT_NAMES = ['str','vig','dex','agi','mag','cha','free'];
+const STAT_LABELS = {str:'Strength',vig:'Vigor',dex:'Dexterity',agi:'Agility',mag:'Magic',cha:'Charisma',free:'Free Points'};
+
+const CLASS_STATS = {
+  'half-elf':     {label:'Half-Elf (Racial)',     perLevel:false, levels:1, str:0,  vig:0,  dex:2,  agi:2,  mag:2,  cha:2,  free:3},
+  'demon-lord-1': {label:'‹Demon Lord› (I)',       perLevel:true,  levels:20, str:10, vig:10, dex:10, agi:10, mag:10, cha:10, free:5},
+  'demon-lord-2': {label:'‹Demon Lord of Pride› (II)', perLevel:true, levels:3, str:10, vig:10, dex:10, agi:10, mag:11, cha:12, free:6},
+  'eclipse-1':    {label:'‹Eclipse Princess› (I)', perLevel:true,  levels:11, str:2,  vig:3,  dex:6,  agi:6,  mag:10, cha:8,  free:5},
+  'epochbreaker-1':{label:'‹Epochbreaker› (I)',    perLevel:true,  levels:4,  str:8,  vig:7,  dex:2,  agi:8,  mag:10, cha:1,  free:4},
+};
+
+function buildSystemRef() {
+  const ref = document.getElementById('system-ref');
+  if (!ref) return;
+
+  let html = '<table class="ref-table"><thead><tr><th>Tier</th><th>Stat Points / Level</th></tr></thead><tbody>';
+  TIER_TABLE.forEach(t => {
+    const hl = (t.tier === 'Uber' || t.tier === 'S') ? ' class="ref-highlight"' : '';
+    html += `<tr${hl}><td>${t.tier}</td><td>${t.points}</td></tr>`;
+  });
+  html += '</tbody></table>';
+  html += '<div class="ref-note"><strong>Max Level:</strong> 20 per class. Ascension at 20 resets to Lv. 1 at the next tier.</div>';
+  html += '<div class="ref-note"><strong>Skill Slots:</strong> 8 base + 8 per secondary class gained or class ascension.</div>';
+  html += '<div class="ref-note"><strong>Capstones:</strong> At max level (20), choose one of three capstone abilities. Not skills — do not occupy slots.</div>';
+  html += '<div class="ref-note"><strong>Secondary Classes:</strong> Unlocked by maxing a primary class. Cannot ascend higher than primary class tier.</div>';
+  ref.innerHTML = html;
+
+  buildStatBreakdown();
+}
+
+function buildStatBreakdown() {
+  const container = document.getElementById('stat-budget');
+  if (!container) return;
+
+  const entries = Object.entries(CLASS_STATS);
+
+  let html = '<div class="budget-title">Stat Breakdown by Source</div>';
+  html += '<table class="ref-table"><thead><tr><th>Source</th><th style="text-align:center">Lvls</th>';
+  STAT_NAMES.forEach(s => { html += `<th style="text-align:center">${s === 'free' ? 'Free' : STAT_LABELS[s].slice(0,3)}</th>`; });
+  html += '<th style="text-align:center">Total</th></tr></thead><tbody id="budget-rows">';
+
+  entries.forEach(([key, cls]) => {
+    html += `<tr data-classkey="${key}">`;
+    html += `<td contenteditable="true">${cls.label}</td>`;
+    if (cls.perLevel) {
+      html += `<td style="text-align:center"><input type="number" class="budget-level-input" data-classkey="${key}" value="${cls.levels}" min="0" max="20"></td>`;
+    } else {
+      html += `<td style="text-align:center;color:var(--text-muted)">1×</td>`;
+    }
+    STAT_NAMES.forEach(s => {
+      const val = cls[s] * (cls.perLevel ? cls.levels : 1);
+      html += `<td style="text-align:center" class="computed-stat" data-classkey="${key}" data-stat="${s}">${val || '<span style="color:var(--text-muted)">—</span>'}</td>`;
+    });
+    const rowTotal = STAT_NAMES.reduce((sum, s) => sum + cls[s] * (cls.perLevel ? cls.levels : 1), 0);
+    html += `<td style="text-align:center;color:var(--gold)" class="computed-stat" data-classkey="${key}" data-stat="rowtotal">${rowTotal}</td>`;
+    html += '</tr>';
+  });
+
+  // Totals row
+  html += '<tr class="ref-highlight" id="budget-totals-row"><td style="font-weight:700">Total</td><td></td>';
+  const totals = {};
+  STAT_NAMES.forEach(s => { totals[s] = entries.reduce((sum, [k, c]) => sum + c[s] * (c.perLevel ? c.levels : 1), 0); });
+  const grand = Object.values(totals).reduce((a, b) => a + b, 0);
+  STAT_NAMES.forEach(s => { html += `<td style="text-align:center;font-weight:700" id="total-${s}">${totals[s]}</td>`; });
+  html += `<td style="text-align:center;font-weight:700;color:var(--gold-bright)" id="total-grand">${grand}</td></tr>`;
+
+  html += '</tbody></table>';
+  html += '<div class="ref-note" style="margin-top:12px">Edit the <strong>Lvls</strong> column when you level up. Totals recalculate automatically.</div>';
+
+  container.innerHTML = html;
+  bindBudgetInputs();
+}
+
+function bindBudgetInputs() {
+  document.querySelectorAll('.budget-level-input').forEach(inp => {
+    const key = inp.dataset.classkey;
+    // Sync restored values back to CLASS_STATS
+    if (key && CLASS_STATS[key] && inp.value) {
+      CLASS_STATS[key].levels = parseInt(inp.value) || 0;
+    }
+    inp.addEventListener('input', () => {
+      const cls = CLASS_STATS[key];
+      if (!cls) return;
+      const newLevels = Math.max(0, Math.min(20, parseInt(inp.value) || 0));
+      cls.levels = newLevels;
+      recalcBudget();
+      scheduleSave('classLevels');
+    });
+  });
+  recalcBudget();
+}
+
+function recalcBudget() {
+  const entries = Object.entries(CLASS_STATS);
+  const totals = {};
+  STAT_NAMES.forEach(s => { totals[s] = 0; });
+
+  entries.forEach(([key, cls]) => {
+    const mult = cls.perLevel ? cls.levels : 1;
+    let rowTotal = 0;
+    STAT_NAMES.forEach(s => {
+      const val = cls[s] * mult;
+      totals[s] += val;
+      rowTotal += val;
+      const cell = document.querySelector(`.computed-stat[data-classkey="${key}"][data-stat="${s}"]`);
+      if (cell) cell.innerHTML = val || '<span style="color:var(--text-muted)">—</span>';
+    });
+    const totalCell = document.querySelector(`.computed-stat[data-classkey="${key}"][data-stat="rowtotal"]`);
+    if (totalCell) totalCell.textContent = rowTotal;
+    
+    // Sync class row level display
+    if (cls.perLevel) {
+      const levelNum = document.querySelector(`button[onclick*="'${key}'"]`)?.closest('.class-level-display')?.querySelector('.level-num');
+      if (levelNum) levelNum.textContent = cls.levels;
+    }
+  });
+
+  let grand = 0;
+  STAT_NAMES.forEach(s => {
+    grand += totals[s];
+    const el = document.getElementById('total-' + s);
+    if (el) el.textContent = totals[s];
+  });
+  const grandEl = document.getElementById('total-grand');
+  if (grandEl) grandEl.textContent = grand;
+  renderStatsDisplay();
 }
 
 // ──── ADD FUNCTIONS ────
-
-function addStat() {
-  const grid = document.querySelector('#stats-content .stats-grid');
-  if (!grid) return;
-  const block = document.createElement('div');
-  block.className = 'stat-block deletable';
-  block.innerHTML = `${makeDelBtn('stats')}<div class="stat-label" contenteditable="true">New Stat</div><input class="stat-input" type="number" value="0">`;
-  grid.appendChild(block);
-  block.querySelector('.stat-label').focus();
-  scheduleSave('stats');
-}
 
 function addClass() {
   const c = document.getElementById('classes-content');
@@ -222,6 +423,20 @@ function addClass() {
   c.appendChild(row);
   row.querySelector('.class-name-label').focus();
   scheduleSave('classes');
+}
+
+function changeClassLevel(classKey, delta) {
+  if (!classKey || !CLASS_STATS[classKey]) return;
+  const cls = CLASS_STATS[classKey];
+  const newLevel = Math.max(0, Math.min(20, cls.levels + delta));
+  cls.levels = newLevel;
+  
+  // Update the budget table input for this class
+  const budgetInput = document.querySelector(`.budget-level-input[data-classkey="${classKey}"]`);
+  if (budgetInput) budgetInput.value = newLevel;
+  
+  recalcBudget();
+  scheduleSave('classLevels');
 }
 
 function addDiscipline() {
@@ -234,7 +449,7 @@ function addDiscipline() {
   const del = document.createElement('span');
   del.className = 'disc-del';
   del.textContent = '×';
-  del.onclick = function() { tag.remove(); scheduleSave('disciplines'); };
+  del.onclick = function() { if(confirm('Are you sure you want to delete this?')) { tag.remove(); scheduleSave('disciplines'); } };
   tag.appendChild(del);
   list.appendChild(tag);
   // Select text for easy editing
@@ -298,8 +513,9 @@ function rebindHandlers() {
     if (section) b.onclick = function() { removeItem(this, section); };
   });
   document.querySelectorAll('.del-btn-gear').forEach(b => { b.onclick = function() { removeItem(this, 'gear'); }; });
-  document.querySelectorAll('.disc-del').forEach(d => { d.onclick = function() { this.parentElement.remove(); scheduleSave('disciplines'); }; });
+  document.querySelectorAll('.disc-del').forEach(d => { d.onclick = function() { if(confirm('Are you sure you want to delete this?')) { this.parentElement.remove(); scheduleSave('disciplines'); } }; });
   bindGearDrag();
+  bindBudgetInputs();
 }
 
 // ──── DRAG & DROP FOR INVENTORY ────
@@ -372,7 +588,113 @@ function bindGearDrag() {
 
 // ──── ROUTING ────
 
-const PAGES = ['overview','skills','perks','inventory','identity','relationships','chronicle'];
+const PAGES = ['overview','skills','perks','inventory','identity','relationships','chronicle','stat-calc'];
+
+// ──── STAT CALCULATOR ────
+
+let CALC_CLASSES = [];
+
+function addCalculatorClass() {
+  const id = Date.now();
+  CALC_CLASSES.push({
+    id: id,
+    name: 'New Class',
+    str: 0, vig: 0, dex: 0, agi: 0, mag: 0, cha: 0, free: 0,
+    levels: 1
+  });
+  renderCalculatorClasses();
+}
+
+function removeCalculatorClass(id) {
+  if (confirm('Are you sure you want to delete this?')) {
+    CALC_CLASSES = CALC_CLASSES.filter(c => c.id !== id);
+    renderCalculatorClasses();
+  }
+}
+
+function updateCalculatorClass(id, field, value) {
+  const cls = CALC_CLASSES.find(c => c.id === id);
+  if (cls) {
+    if (field === 'levels') {
+      cls.levels = Math.max(1, Math.min(20, parseInt(value) || 1));
+    } else {
+      cls[field] = field === 'name' ? value : parseInt(value) || 0;
+    }
+    renderCalculatorClasses();
+  }
+}
+
+function renderCalculatorClasses() {
+  const container = document.getElementById('calc-classes-content');
+  if (!container) return;
+  
+  if (CALC_CLASSES.length === 0) {
+    container.innerHTML = '<div style="color:var(--text-muted);font-style:italic;padding:20px;text-align:center">No custom classes yet. Add one to get started.</div>';
+  } else {
+    container.innerHTML = CALC_CLASSES.map(cls => `
+      <div class="calc-class-block" data-id="${cls.id}">
+        <div class="calc-class-header">
+          <input type="text" class="calc-class-name" value="${cls.name}" onchange="updateCalculatorClass(${cls.id}, 'name', this.value)" placeholder="Class name...">
+          <button class="del-btn" onclick="removeCalculatorClass(${cls.id})" title="Delete">×</button>
+        </div>
+        <div class="calc-class-levels">
+          <label>Levels:</label>
+          <input type="number" min="1" max="20" value="${cls.levels}" onchange="updateCalculatorClass(${cls.id}, 'levels', this.value)">
+        </div>
+        <div class="calc-stats-grid">
+          ${['str', 'vig', 'dex', 'agi', 'mag', 'cha', 'free'].map(s => `
+            <div class="calc-stat-input">
+              <label>${STAT_LABELS[s]}</label>
+              <input type="number" min="0" value="${cls[s]}" onchange="updateCalculatorClass(${cls.id}, '${s}', this.value)">
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `).join('');
+  }
+  
+  renderCalculatorTotals();
+}
+
+function renderCalculatorTotals() {
+  const container = document.getElementById('calc-totals-display');
+  if (!container) return;
+  
+  if (CALC_CLASSES.length === 0) {
+    container.innerHTML = '<div style="color:var(--text-muted);font-style:italic;padding:20px;text-align:center">Add classes to see totals.</div>';
+    return;
+  }
+  
+  // Calculate totals
+  const totals = {};
+  STAT_NAMES.forEach(s => { totals[s] = 0; });
+  
+  CALC_CLASSES.forEach(cls => {
+    STAT_NAMES.forEach(s => {
+      totals[s] += cls[s] * cls.levels;
+    });
+  });
+  
+  // Calculate grand total (excluding free points)
+  const grandTotal = STAT_NAMES.slice(0, -1).reduce((sum, s) => sum + totals[s], 0);
+  
+  // Render totals grid
+  container.innerHTML = `
+    <div class="calc-totals-grid">
+      ${STAT_NAMES.map(s => `
+        <div class="calc-total-block">
+          <div class="calc-total-label">${STAT_LABELS[s]}</div>
+          <div class="calc-total-value">${totals[s]}</div>
+        </div>
+      `).join('')}
+    </div>
+    <div class="calc-grand-total">
+      <div class="calc-grand-total-label">Total Points</div>
+      <div class="calc-grand-total-value">${grandTotal}</div>
+    </div>
+  `;
+}
+
 function navigate(page) {
   if (!PAGES.includes(page)) page = 'overview';
   PAGES.forEach(p => {
@@ -397,7 +719,7 @@ const CONFIG_KEY = 'raven_fb_cfg';
 const LOCAL_KEY = 'raven_sheet_v4';
 let db = null, sheetRef = null, isOnline = false, activeSection = null, suppressRemote = {}, saveTimers = {};
 
-const ALL_KEYS = ['header/charName','header/charTitle','header/charRace','stats','classes','disciplines','skills','perks','gear','personality','oath','echo','story','relationships','notes'];
+const ALL_KEYS = ['header/charName','header/charTitle','header/charRace','classLevels','allocatedFreePoints','classes','disciplines','skills','perks','gear','personality','oath','echo','story','relationships','notes'];
 
 document.addEventListener('focusin', e => {
   const sec = e.target.closest('[data-section]');
@@ -410,6 +732,15 @@ document.addEventListener('focusout', () => { setTimeout(() => { activeSection =
 
 function getVal(key) {
   if (key === 'notes') { const ta = document.getElementById('notes-area'); return ta ? ta.value : ''; }
+  if (key === 'classLevels') {
+    // Serialize CLASS_STATS levels as JSON string
+    const data = {};
+    Object.entries(CLASS_STATS).forEach(([k, c]) => { data[k] = c.levels; });
+    return JSON.stringify(data);
+  }
+  if (key === 'allocatedFreePoints') {
+    return JSON.stringify(ALLOCATED_FREE_POINTS);
+  }
   const fld = document.querySelector(`[data-field="${key}"]`);
   if (fld) return fld.innerHTML;
   const sec = document.querySelector(`[data-section="${key}"]`);
@@ -424,6 +755,29 @@ function getVal(key) {
 function setVal(key, val) {
   if (val == null) return;
   if (key === 'notes') { const ta = document.getElementById('notes-area'); if (ta) ta.value = val; return; }
+  if (key === 'classLevels') {
+    // Restore CLASS_STATS levels from JSON and rebuild the table
+    try {
+      const data = typeof val === 'string' ? JSON.parse(val) : val;
+      Object.entries(data).forEach(([k, lvl]) => {
+        if (CLASS_STATS[k]) CLASS_STATS[k].levels = lvl;
+      });
+      buildStatBreakdown();
+    } catch(e) {}
+    return;
+  }
+  if (key === 'allocatedFreePoints') {
+    try {
+      const data = typeof val === 'string' ? JSON.parse(val) : val;
+      Object.entries(data).forEach(([stat, allocated]) => {
+        if (ALLOCATED_FREE_POINTS.hasOwnProperty(stat)) {
+          ALLOCATED_FREE_POINTS[stat] = allocated;
+        }
+      });
+      renderStatsDisplay();
+    } catch(e) {}
+    return;
+  }
   // Reject non-string values for section content (old Firebase format was objects)
   if (typeof val !== 'string') return;
   const fld = document.querySelector(`[data-field="${key}"]`);
@@ -438,6 +792,7 @@ function setSave(text, cls) { const el = document.getElementById('save-indicator
 function scheduleSave(key) {
   if (saveTimers[key]) clearTimeout(saveTimers[key]);
   setSave('Saving...', 'saving');
+  if (key === 'classes') setTimeout(buildStatBreakdown, 50);
   saveTimers[key] = setTimeout(() => {
     const val = getVal(key);
     if (isOnline && sheetRef) { suppressRemote[key] = true; sheetRef.child(key).set(val).then(() => setSave('Saved', 'saved')).catch(() => setSave('Error', '')); }
