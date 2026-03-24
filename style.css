@@ -162,6 +162,9 @@ input.stat-input:focus{border-bottom-color:var(--gold)}
 .calc-total-block{text-align:center;padding:16px;border:1px solid var(--border-accent);border-radius:4px;background:rgba(107,76,154,.1)}
 .calc-total-label{font-family:'Cinzel',serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px}
 .calc-total-value{font-family:'Cinzel',serif;font-size:28px;font-weight:700;color:var(--gold-bright)}
+.calc-grand-total{text-align:center;padding:24px;margin-top:24px;border:2px solid var(--gold-dim);border-radius:6px;background:rgba(201,168,76,.08)}
+.calc-grand-total-label{font-family:'Cinzel',serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px}
+.calc-grand-total-value{font-family:'Cinzel',serif;font-size:38px;font-weight:700;color:var(--gold-bright);text-shadow:0 0 12px rgba(201,168,76,.3)}
 .calc-class-block .del-btn{opacity:1;background:rgba(192,57,43,.3);color:var(--red-accent);border:1px solid var(--red-accent);right:auto;left:12px;top:12px}
 .calc-class-block .del-btn:hover{background:rgba(192,57,43,.6);color:#ff5555;box-shadow:0 0 12px rgba(192,57,43,.4)}
 

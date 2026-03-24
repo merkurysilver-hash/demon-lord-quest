@@ -675,6 +675,9 @@ function renderCalculatorTotals() {
     });
   });
   
+  // Calculate grand total (excluding free points)
+  const grandTotal = STAT_NAMES.slice(0, -1).reduce((sum, s) => sum + totals[s], 0);
+  
   // Render totals grid
   container.innerHTML = `
     <div class="calc-totals-grid">
@@ -684,6 +687,10 @@ function renderCalculatorTotals() {
           <div class="calc-total-value">${totals[s]}</div>
         </div>
       `).join('')}
+    </div>
+    <div class="calc-grand-total">
+      <div class="calc-grand-total-label">Total Points</div>
+      <div class="calc-grand-total-value">${grandTotal}</div>
     </div>
   `;
 }
