@@ -188,9 +188,9 @@ input.stat-input:focus{border-bottom-color:var(--gold)}
 .setup-skip{display:block;text-align:center;margin-top:20px;color:var(--text-muted);font-size:13px;cursor:pointer;text-decoration:underline}
 
 /* SYSTEM REFERENCE */
-.ref-table{width:100%;border-collapse:collapse;margin-bottom:16px}
+.ref-table{width:100%;border-collapse:collapse;margin-bottom:16px;display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;}
 .ref-table th{font-family:'Cinzel',serif;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);text-align:left;padding:8px 6px;border-bottom:1px solid var(--border-accent);white-space:nowrap}
-.ref-table td{padding:6px;border-bottom:1px solid rgba(42,36,64,.3);font-size:13px;color:var(--text-secondary)}
+.ref-table td{padding:6px;border-bottom:1px solid rgba(42,36,64,.3);font-size:13px;color:var(--text-secondary);white-space:nowrap;}
 .ref-table td:first-child{font-family:'Cinzel',serif;font-weight:600;color:var(--text-primary);font-size:12px}
 .ref-table tr:hover{background:rgba(107,76,154,.06)}
 .ref-table tr.ref-highlight td{color:var(--gold-bright);background:rgba(201,168,76,.05)}
