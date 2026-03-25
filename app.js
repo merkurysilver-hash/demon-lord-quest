@@ -111,6 +111,7 @@ function makeDelBtn(section) {
 function toggleCard(el) { el.closest('.card').classList.toggle('collapsed'); }
 function toggleGear(el) { el.closest('.gear-item').classList.toggle('open'); }
 function toggleSkill(el) { el.closest('.skill-card').classList.toggle('open'); }
+function togglePerk(el) { el.closest('.perk-card').classList.toggle('open'); }
 
 function removeItem(btn, section) {
   const item = btn.closest('.deletable, .stat-block, .class-row, .skill-card, .perk-card, .gear-item, .rel-card, .discipline-tag');
@@ -265,7 +266,7 @@ function renderSkills(data) {
 
 function buildPerks(container) {
   container.innerHTML = DEF_PERKS.map(p =>
-    `<div class="perk-card deletable">${makeDelBtn('perks')}<div class="perk-name" contenteditable="true">${p.name}</div><div class="perk-type" contenteditable="true">${p.type}</div><div class="perk-desc" contenteditable="true">${p.desc}</div></div>`
+    `<div class="perk-card deletable">${makeDelBtn('perks')}<div class="perk-card-header"><span class="perk-toggle" onclick="togglePerk(this)"><span class="perk-arrow">▶</span></span><div class="perk-card-content"><div class="perk-name" contenteditable="true">${p.name}</div><div class="perk-type" contenteditable="true">${p.type}</div></div></div><div class="perk-desc" contenteditable="true">${p.desc}</div></div>`
   ).join('');
 }
 
@@ -284,7 +285,7 @@ function renderPerks(data) {
   if (!container) return;
   if (!Array.isArray(data)) return;
   container.innerHTML = data.map(p =>
-    `<div class="perk-card deletable">${makeDelBtn('perks')}<div class="perk-name" contenteditable="true">${p.name || ''}</div><div class="perk-type" contenteditable="true">${p.type || ''}</div><div class="perk-desc" contenteditable="true">${p.desc || ''}</div></div>`
+    `<div class="perk-card deletable">${makeDelBtn('perks')}<div class="perk-card-header"><span class="perk-toggle" onclick="togglePerk(this)"><span class="perk-arrow">▶</span></span><div class="perk-card-content"><div class="perk-name" contenteditable="true">${p.name || ''}</div><div class="perk-type" contenteditable="true">${p.type || ''}</div></div></div><div class="perk-desc" contenteditable="true">${p.desc || ''}</div></div>`
   ).join('');
 }
 
@@ -791,6 +792,7 @@ function normalizeSkillCards() {
 function rebindHandlers() {
   document.querySelectorAll('.gear-toggle').forEach(t => { t.onclick = function() { toggleGear(this); }; });
   document.querySelectorAll('.skill-toggle').forEach(t => { t.onclick = function() { toggleSkill(this); }; });
+  document.querySelectorAll('.perk-toggle').forEach(t => { t.onclick = function() { togglePerk(this); }; });
   document.querySelectorAll('.del-btn').forEach(b => {
     const section = b.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
     if (section) b.onclick = function() { removeItem(this, section); };
