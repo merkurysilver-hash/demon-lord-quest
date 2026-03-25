@@ -141,6 +141,10 @@ input.stat-input:focus{border-bottom-color:var(--gold)}
 .gear-effect{margin-bottom:6px}.gear-effect-name{color:var(--purple-light);font-style:italic}
 .gear-drawback{color:var(--red-accent);font-size:13px;margin-top:8px;opacity:.85}
 .gear-flavor{font-style:italic;color:var(--text-muted);font-size:13px;margin-top:10px}
+.gear-equipped-btn{position:absolute;top:12px;right:50px;width:24px;height:24px;border:none;border-radius:50%;background:transparent;color:var(--text-muted);font-size:16px;line-height:24px;text-align:center;cursor:pointer;opacity:0.6;transition:opacity .15s,color .15s,transform .15s;z-index:5;padding:0}
+.gear-equipped-btn:hover{opacity:1;color:var(--gold)}
+.gear-item.equipped .gear-equipped-btn{color:var(--gold);opacity:1;transform:scale(1.1)}
+.gear-item.equipped{background:rgba(201,168,76,.05)}
 .gear-add-row{padding:8px 20px}
 
 /* PROSE */

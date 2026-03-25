@@ -110,6 +110,12 @@ function makeDelBtn(section) {
 
 function toggleCard(el) { el.closest('.card').classList.toggle('collapsed'); }
 function toggleGear(el) { el.closest('.gear-item').classList.toggle('open'); }
+function toggleEquipped(el) {
+  const item = el.closest('.gear-item');
+  item.classList.toggle('equipped');
+  el.setAttribute('data-equipped', item.classList.contains('equipped') ? 'true' : 'false');
+  scheduleSave('gear');
+}
 function toggleSkill(el) { el.closest('.skill-card').classList.toggle('open'); }
 function togglePerk(el) { el.closest('.perk-card').classList.toggle('open'); }
 
@@ -292,22 +298,43 @@ function renderPerks(data) {
 function serializeGear() {
   const container = document.getElementById('gear-content');
   if (!container) return [];
-  return Array.from(container.querySelectorAll('.gear-item')).map(item => {
-    return {
-      name: item.querySelector('.gear-name')?.textContent.trim() || '',
-      details: item.querySelector('.gear-details')?.textContent.trim() || '',
-      open: item.classList.contains('open')
-    };
+  const items = [];
+  let currentCategory = null;
+  
+  // Iterate through all children to capture category and items
+  Array.from(container.children).forEach(el => {
+    if (el.classList.contains('gear-category-title')) {
+      currentCategory = el.textContent.trim();
+    } else if (el.classList.contains('gear-item')) {
+      items.push({
+        name: el.querySelector('.gear-name')?.textContent.trim() || '',
+        details: el.querySelector('.gear-details')?.textContent.trim() || '',
+        open: el.classList.contains('open'),
+        equipped: el.classList.contains('equipped'),
+        category: el.getAttribute('data-category') || currentCategory || 'Accessories'
+      });
+    }
   });
+  
+  return items;
 }
 
 function renderGear(data) {
   const container = document.getElementById('gear-content');
   if (!container || !Array.isArray(data)) return;
   let html = '';
+  let lastCategory = null;
+  
   data.forEach(item => {
+    // Add category title if category changed
+    if (item.category && item.category !== lastCategory) {
+      html += `<div class="gear-category-title">${item.category}</div>`;
+      lastCategory = item.category;
+    }
+    
     const openClass = item.open === false ? '' : ' open';
-    html += `<div class="gear-item${openClass} deletable" draggable="true"><button class="del-btn-gear" onclick="removeItem(this,'gear')" title="Delete">×</button><div class="gear-toggle" onclick="toggleGear(this)"><span class="gear-arrow">▶</span><span class="gear-name">${item.name || 'New Item'}</span></div><div class="gear-details" contenteditable="true">${item.details || ''}</div></div>`;
+    const equippedClass = item.equipped ? ' equipped' : '';
+    html += `<div class="gear-item${openClass}${equippedClass} deletable" draggable="true"><button class="del-btn-gear" onclick="removeItem(this,'gear')" title="Delete">×</button><div class="gear-toggle" onclick="toggleGear(this)"><span class="gear-arrow">▶</span><span class="gear-name">${item.name || 'New Item'}</span></div><button class="gear-equipped-btn" onclick="toggleEquipped(this)" title="Toggle equipped" data-equipped="${item.equipped ? 'true' : 'false'}">◆</button><div class="gear-details" contenteditable="true">${item.details || ''}</div></div>`;
   });
   container.innerHTML = html;
   bindGearDrag();
@@ -742,10 +769,19 @@ function addPerk() {
 
 function addGearItem() {
   const c = document.getElementById('gear-content');
+  
+  // Find the last category title, or default to 'Accessories'
+  let lastCategory = 'Accessories';
+  const categoryTitles = c.querySelectorAll('.gear-category-title');
+  if (categoryTitles.length > 0) {
+    lastCategory = categoryTitles[categoryTitles.length - 1].textContent.trim();
+  }
+  
   const item = document.createElement('div');
   item.className = 'gear-item open deletable';
   item.setAttribute('draggable', 'true');
-  item.innerHTML = `<button class="del-btn-gear" onclick="removeItem(this,'gear')" title="Delete">×</button><div class="gear-toggle" onclick="toggleGear(this)"><span class="gear-arrow">\u25B6</span><span class="gear-name" contenteditable="true">New Item</span></div><div class="gear-details" contenteditable="true"><div class="gear-effect"><span class="gear-effect-name">Effect</span> — Describe the effect...</div></div>`;
+  item.setAttribute('data-category', lastCategory);
+  item.innerHTML = `<button class="del-btn-gear" onclick="removeItem(this,'gear')" title="Delete">×</button><div class="gear-toggle" onclick="toggleGear(this)"><span class="gear-arrow">\u25B6</span><span class="gear-name" contenteditable="true">New Item</span></div><button class="gear-equipped-btn" onclick="toggleEquipped(this)" title="Toggle equipped" data-equipped="false">◆</button><div class="gear-details" contenteditable="true"><div class="gear-effect"><span class="gear-effect-name">Effect</span> — Describe the effect...</div></div>`;
   c.appendChild(item);
   item.querySelector('.gear-name').focus();
   bindGearDrag();
@@ -793,6 +829,7 @@ function rebindHandlers() {
   document.querySelectorAll('.gear-toggle').forEach(t => { t.onclick = function() { toggleGear(this); }; });
   document.querySelectorAll('.skill-toggle').forEach(t => { t.onclick = function() { toggleSkill(this); }; });
   document.querySelectorAll('.perk-toggle').forEach(t => { t.onclick = function() { togglePerk(this); }; });
+  document.querySelectorAll('.gear-equipped-btn').forEach(b => { b.onclick = function() { toggleEquipped(this); }; });
   document.querySelectorAll('.del-btn').forEach(b => {
     const section = b.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
     if (section) b.onclick = function() { removeItem(this, section); };
