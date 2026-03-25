@@ -232,14 +232,61 @@ function buildDisciplines(container) {
     '</div>';
 }
 
-function buildSkills(container) {
-  container.innerHTML = DEF_SKILLS.map((s, i) => {
-    const name = s.name ? `‹${s.name}›` : 'Empty Slot';
+function getTierValue(rawTier) {
+  if (!rawTier) return 0;
+  const t = String(rawTier).trim().toUpperCase();
+  if (t === '—' || t === '-') return 0;
+  const roman = {
+    I: 1, II: 2, III: 3, IV: 4, V: 5,
+    VI: 6, VII: 7, VIII: 8, IX: 9, X: 10
+  };
+  if (typeof roman[t] === 'number') return roman[t];
+  const numeric = parseInt(t, 10);
+  return Number.isFinite(numeric) && numeric > 0 ? numeric : 0;
+}
+
+function sortSkills(skills) {
+  return [...skills].sort((a, b) => {
+    const aValue = getTierValue(a.tier || a.t || '');
+    const bValue = getTierValue(b.tier || b.t || '');
+    if (bValue !== aValue) return bValue - aValue;
+    return String(a.name || a.n || '').localeCompare(String(b.name || b.n || ''), undefined, {numeric:true, sensitivity:'base'});
+  });
+}
+
+function renderSkillGroup(skills) {
+  if (!Array.isArray(skills) || skills.length === 0) return '';
+  // create grouped HTML with tier headings
+  let html = '';
+  let slot = 1;
+  const grouped = skills.reduce((acc, s) => {
     const tier = s.tier || '—';
+    const key = tier || '—';
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(s);
+    return acc;
+  }, {});
+
+  // preserve descending tier order from sorted input
+  let currentTier = null;
+  skills.forEach(s => {
+    const tier = s.tier || '—';
+    if (tier !== currentTier) {
+      currentTier = tier;
+      html += `<div class="skill-tier-heading">Tier ${tier}</div>`;
+    }
+    const name = s.name ? s.name : 'Empty Slot';
     const desc = s.desc || 'Click to add a description...';
     const empty = s.name ? '' : ' skill-card-empty';
-    return `<div class="skill-card${empty} deletable">${makeDelBtn('skills')}<div class="skill-card-header"><span class="skill-toggle" onclick="toggleSkill(this)"><span class="skill-arrow">\u25B6</span></span><span class="skill-slot">${i+1}.</span><span class="skill-card-name" contenteditable="true">${name}</span><span class="skill-card-tier" contenteditable="true">${tier}</span></div><div class="skill-card-desc" contenteditable="true">${desc}</div></div>`;
-  }).join('');
+    html += `<div class="skill-card${empty} deletable">${makeDelBtn('skills')}<div class="skill-card-header"><span class="skill-toggle" onclick="toggleSkill(this)"><span class="skill-arrow">▶</span></span><span class="skill-slot">${slot++}.</span><span class="skill-card-name" contenteditable="true">${name}</span><span class="skill-card-tier" contenteditable="true">${tier}</span></div><div class="skill-card-desc" contenteditable="true">${desc}</div></div>`;
+  });
+
+  return html;
+}
+
+function buildSkills(container) {
+  const sorted = sortSkills(DEF_SKILLS);
+  container.innerHTML = renderSkillGroup(sorted);
 }
 
 function serializeSkills() {
@@ -256,18 +303,20 @@ function serializeSkills() {
   });
 }
 
+function sortSkillsInDOM() {
+  const sorted = sortSkills(serializeSkills());
+  renderSkills(sorted);
+  rebindHandlers();
+  // strengthened by the grouped re-render
+}
+
 function renderSkills(data) {
   const container = document.getElementById('skills-content');
   if (!container) return;
   if (!Array.isArray(data)) return;
 
-  container.innerHTML = data.map((s, i) => {
-    const name = s.name ? s.name : 'Empty Slot';
-    const tier = s.tier || '—';
-    const desc = s.desc || 'Click to add a description...';
-    const empty = s.name ? '' : ' skill-card-empty';
-    return `<div class="skill-card${empty} deletable">${makeDelBtn('skills')}<div class="skill-card-header"><span class="skill-toggle" onclick="toggleSkill(this)"><span class="skill-arrow">\u25B6</span></span><span class="skill-slot">${i+1}.</span><span class="skill-card-name" contenteditable="true">${name}</span><span class="skill-card-tier" contenteditable="true">${tier}</span></div><div class="skill-card-desc" contenteditable="true">${desc}</div></div>`;
-  }).join('');
+  const sorted = sortSkills(data);
+  container.innerHTML = renderSkillGroup(sorted);
 }
 
 function buildPerks(container) {
@@ -754,6 +803,7 @@ function addSkill() {
   card.innerHTML = `${makeDelBtn('skills')}<div class="skill-card-header"><span class="skill-toggle" onclick="toggleSkill(this)"><span class="skill-arrow">\u25B6</span></span><span class="skill-slot">${count}.</span><span class="skill-card-name" contenteditable="true">‹New Skill›</span><span class="skill-card-tier" contenteditable="true">I</span></div><div class="skill-card-desc" contenteditable="true">Describe this skill...</div>`;
   c.appendChild(card);
   card.querySelector('.skill-card-name').focus();
+  sortSkillsInDOM();
   scheduleSave('skills');
 }
 

@@ -100,6 +100,7 @@ input.stat-input:focus{border-bottom-color:var(--gold)}
 .skill-card{padding:16px 4px 16px 0;border-bottom:1px solid rgba(42,36,64,.4);position:relative}
 .skill-card:last-child{border-bottom:none}
 .skill-card-header{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.skill-tier-heading{font-family:'Cinzel',serif;font-size:13px;font-weight:700;color:var(--gold);letter-spacing:1.5px;text-transform:uppercase;padding:14px 0 6px}
 .skill-toggle{display:flex;align-items:center;justify-content:center;width:20px;height:20px;cursor:pointer;color:var(--text-muted);user-select:none}
 .skill-arrow{font-size:10px;transition:transform .2s;}
 .skill-card.open .skill-arrow{transform:rotate(90deg);}
