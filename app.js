@@ -231,7 +231,35 @@ function buildSkills(container) {
     const tier = s.tier || '—';
     const desc = s.desc || 'Click to add a description...';
     const empty = s.name ? '' : ' skill-card-empty';
-    return `<div class="skill-card open${empty} deletable">${makeDelBtn('skills')}<div class="skill-card-header"><span class="skill-toggle" onclick="toggleSkill(this)"><span class="skill-arrow">\u25B6</span></span><span class="skill-slot">${i+1}.</span><span class="skill-card-name" contenteditable="true">${name}</span><span class="skill-card-tier" contenteditable="true">${tier}</span></div><div class="skill-card-desc" contenteditable="true">${desc}</div></div>`;
+    return `<div class="skill-card${empty} deletable">${makeDelBtn('skills')}<div class="skill-card-header"><span class="skill-toggle" onclick="toggleSkill(this)"><span class="skill-arrow">\u25B6</span></span><span class="skill-slot">${i+1}.</span><span class="skill-card-name" contenteditable="true">${name}</span><span class="skill-card-tier" contenteditable="true">${tier}</span></div><div class="skill-card-desc" contenteditable="true">${desc}</div></div>`;
+  }).join('');
+}
+
+function serializeSkills() {
+  const container = document.getElementById('skills-content');
+  if (!container) return [];
+  return Array.from(container.querySelectorAll('.skill-card')).map((card, idx) => {
+    const slot = card.querySelector('.skill-slot')?.textContent.trim().replace('.', '') || String(idx + 1);
+    return {
+      slot: Number(slot) || idx + 1,
+      name: card.querySelector('.skill-card-name')?.textContent.trim() || '',
+      tier: card.querySelector('.skill-card-tier')?.textContent.trim() || '',
+      desc: card.querySelector('.skill-card-desc')?.textContent.trim() || ''
+    };
+  });
+}
+
+function renderSkills(data) {
+  const container = document.getElementById('skills-content');
+  if (!container) return;
+  if (!Array.isArray(data)) return;
+
+  container.innerHTML = data.map((s, i) => {
+    const name = s.name ? s.name : 'Empty Slot';
+    const tier = s.tier || '—';
+    const desc = s.desc || 'Click to add a description...';
+    const empty = s.name ? '' : ' skill-card-empty';
+    return `<div class="skill-card${empty} deletable">${makeDelBtn('skills')}<div class="skill-card-header"><span class="skill-toggle" onclick="toggleSkill(this)"><span class="skill-arrow">\u25B6</span></span><span class="skill-slot">${i+1}.</span><span class="skill-card-name" contenteditable="true">${name}</span><span class="skill-card-tier" contenteditable="true">${tier}</span></div><div class="skill-card-desc" contenteditable="true">${desc}</div></div>`;
   }).join('');
 }
 
@@ -239,6 +267,234 @@ function buildPerks(container) {
   container.innerHTML = DEF_PERKS.map(p =>
     `<div class="perk-card deletable">${makeDelBtn('perks')}<div class="perk-name" contenteditable="true">${p.name}</div><div class="perk-type" contenteditable="true">${p.type}</div><div class="perk-desc" contenteditable="true">${p.desc}</div></div>`
   ).join('');
+}
+
+function serializePerks() {
+  const container = document.getElementById('perks-content');
+  if (!container) return [];
+  return Array.from(container.querySelectorAll('.perk-card')).map(card => ({
+    name: card.querySelector('.perk-name')?.textContent.trim() || '',
+    type: card.querySelector('.perk-type')?.textContent.trim() || '',
+    desc: card.querySelector('.perk-desc')?.textContent.trim() || ''
+  }));
+}
+
+function renderPerks(data) {
+  const container = document.getElementById('perks-content');
+  if (!container) return;
+  if (!Array.isArray(data)) return;
+  container.innerHTML = data.map(p =>
+    `<div class="perk-card deletable">${makeDelBtn('perks')}<div class="perk-name" contenteditable="true">${p.name || ''}</div><div class="perk-type" contenteditable="true">${p.type || ''}</div><div class="perk-desc" contenteditable="true">${p.desc || ''}</div></div>`
+  ).join('');
+}
+
+function serializeGear() {
+  const container = document.getElementById('gear-content');
+  if (!container) return [];
+  return Array.from(container.querySelectorAll('.gear-item')).map(item => {
+    return {
+      name: item.querySelector('.gear-name')?.textContent.trim() || '',
+      details: item.querySelector('.gear-details')?.textContent.trim() || '',
+      open: item.classList.contains('open')
+    };
+  });
+}
+
+function renderGear(data) {
+  const container = document.getElementById('gear-content');
+  if (!container || !Array.isArray(data)) return;
+  let html = '';
+  data.forEach(item => {
+    const openClass = item.open === false ? '' : ' open';
+    html += `<div class="gear-item${openClass} deletable" draggable="true"><button class="del-btn-gear" onclick="removeItem(this,'gear')" title="Delete">×</button><div class="gear-toggle" onclick="toggleGear(this)"><span class="gear-arrow">▶</span><span class="gear-name">${item.name || 'New Item'}</span></div><div class="gear-details" contenteditable="true">${item.details || ''}</div></div>`;
+  });
+  container.innerHTML = html;
+  bindGearDrag();
+}
+
+function serializeRelations() {
+  const container = document.getElementById('rels-content');
+  if (!container) return [];
+  return Array.from(container.querySelectorAll('.rel-card')).map(card => ({
+    name: card.querySelector('.rel-name')?.textContent.trim() || '',
+    desc: card.querySelector('.rel-details')?.textContent.trim() || ''
+  }));
+}
+
+function renderRelations(data) {
+  const container = document.getElementById('rels-content');
+  if (!container || !Array.isArray(data)) return;
+  container.innerHTML = data.map(r => `<div class="rel-card deletable">${makeDelBtn('relationships')}<div class="rel-name" contenteditable="true">${r.name || ''}</div><div class="rel-details" contenteditable="true">${r.desc || ''}</div></div>`).join('');
+}
+
+function serializeClasses() {
+  const container = document.getElementById('classes-content');
+  if (!container) return [];
+  return Array.from(container.querySelectorAll('.class-row')).map(row => ({
+    name: row.querySelector('.class-name-label')?.textContent.trim() || '',
+    tier: row.querySelector('.class-tier')?.textContent.trim() || '',
+    level: parseInt(row.querySelector('.level-num')?.textContent || '0', 10) || 0,
+    desc: row.querySelector('.class-desc')?.textContent.trim() || ''
+  }));
+}
+
+function renderClasses(data) {
+  const container = document.getElementById('classes-content');
+  if (!container || !Array.isArray(data)) return;
+  container.innerHTML = data.map(c => {
+    const level = c.level || 0;
+    return `<div class="class-row deletable">${makeDelBtn('classes')}<div class="class-name-label" contenteditable="true">${c.name || ''}</div><div class="class-tier" contenteditable="true">${c.tier || ''}</div><div class="class-level-display"><button class="level-btn" onclick="changeClassLevel('__unknown__', -1)">−</button><span class="level-value">Lv. <span class="level-num">${level}</span></span><button class="level-btn" onclick="changeClassLevel('__unknown__', 1)">+</button></div><div class="class-desc" contenteditable="true">${c.desc || ''}</div></div>`;
+  }).join('');
+}
+
+
+function serializeDisciplines() {
+  const list = document.querySelector('#disciplines-content .discipline-list');
+  if (!list) return [];
+  return Array.from(list.querySelectorAll('.discipline-tag')).map(t => t.childNodes.length ? t.firstChild.textContent.trim() : t.textContent.trim());
+}
+
+function renderDisciplines(data) {
+  const list = document.querySelector('#disciplines-content .discipline-list');
+  if (!list || !Array.isArray(data)) return;
+  list.innerHTML = data.map(d => `<span class="discipline-tag" contenteditable="true">${d}<span class="disc-del" onclick="removeItem(this.parentElement.querySelector(\'.disc-del\'),'disciplines');this.parentElement.remove();scheduleSave('disciplines')">×</span></span>`).join('');
+}
+
+function serializePersonality() {
+  const container = document.querySelector('[data-section="personality"]');
+  if (!container) return null;
+  return { content: container.innerHTML };
+}
+
+function renderPersonality(data) {
+  const container = document.querySelector('[data-section="personality"]');
+  if (!container || typeof data !== 'object' || !data.content) return;
+  container.innerHTML = data.content;
+}
+
+function serializeStory() {
+  const container = document.querySelector('[data-section="story"]');
+  if (!container) return null;
+  return { content: container.innerHTML };
+}
+
+function renderStory(data) {
+  const container = document.querySelector('[data-section="story"]');
+  if (!container || typeof data !== 'object' || !data.content) return;
+  container.innerHTML = data.content;
+}
+
+function renderStructuredSection(key, data) {
+  switch (key) {
+    case 'skills':
+      return renderSkills(data);
+    case 'perks':
+      return renderPerks(data);
+    case 'gear':
+      return renderGear(data);
+    case 'relationships':
+      return renderRelations(data);
+    case 'disciplines':
+      return renderDisciplines(data);
+    case 'classes':
+      renderClasses(data);
+      buildStatBreakdown();
+      return;
+    case 'personality':
+      return renderPersonality(data);
+    case 'story':
+      return renderStory(data);
+    default:
+      return;
+  }
+}
+
+function parseLegacySectionData(key, htmlString) {
+  if (typeof htmlString !== 'string' || !htmlString.trim()) return null;
+
+  const temp = document.createElement('div');
+  temp.innerHTML = htmlString;
+
+  switch (key) {
+    case 'skills': {
+      const cards = temp.querySelectorAll('.skill-card');
+      if (!cards.length) return null;
+      return Array.from(cards).map(card => ({
+        slot: Number(card.querySelector('.skill-slot')?.textContent.replace('.', '').trim()) || 0,
+        name: card.querySelector('.skill-card-name')?.textContent.trim() || '',
+        tier: card.querySelector('.skill-card-tier')?.textContent.trim() || '',
+        desc: card.querySelector('.skill-card-desc')?.textContent.trim() || '',
+        open: card.classList.contains('open')
+      }));
+    }
+    case 'perks': {
+      const cards = temp.querySelectorAll('.perk-card');
+      if (!cards.length) return null;
+      return Array.from(cards).map(card => ({
+        name: card.querySelector('.perk-name')?.textContent.trim() || '',
+        type: card.querySelector('.perk-type')?.textContent.trim() || '',
+        desc: card.querySelector('.perk-desc')?.textContent.trim() || ''
+      }));
+    }
+    case 'gear': {
+      const items = temp.querySelectorAll('.gear-item');
+      if (!items.length) return null;
+      return Array.from(items).map(item => ({
+        name: item.querySelector('.gear-name')?.textContent.trim() || '',
+        details: item.querySelector('.gear-details')?.textContent.trim() || '',
+        open: item.classList.contains('open')
+      }));
+    }
+    case 'relationships': {
+      const cards = temp.querySelectorAll('.rel-card');
+      if (!cards.length) return null;
+      return Array.from(cards).map(card => ({
+        name: card.querySelector('.rel-name')?.textContent.trim() || '',
+        desc: card.querySelector('.rel-details')?.textContent.trim() || ''
+      }));
+    }
+    case 'disciplines': {
+      const tags = temp.querySelectorAll('.discipline-tag');
+      if (!tags.length) return null;
+      return Array.from(tags).map(tag => {
+        const text = Array.from(tag.childNodes).filter(n => n.nodeType === Node.TEXT_NODE).map(n => n.textContent).join('').trim();
+        return text;
+      }).filter(Boolean);
+    }
+    case 'classes': {
+      const rows = temp.querySelectorAll('.class-row');
+      if (!rows.length) return null;
+      return Array.from(rows).map(row => ({
+        name: row.querySelector('.class-name-label')?.textContent.trim() || '',
+        tier: row.querySelector('.class-tier')?.textContent.trim() || '',
+        level: Number(row.querySelector('.level-num')?.textContent.trim()) || 0,
+        desc: row.querySelector('.class-desc')?.textContent.trim() || ''
+      }));
+    }
+    case 'personality': {
+      return { content: htmlString };
+    }
+    case 'story': {
+      return { content: htmlString };
+    }
+    default:
+      return null;
+  }
+}
+
+function migrateLegacySectionData(key, htmlValue) {
+  const parsed = parseLegacySectionData(key, htmlValue);
+  if (!parsed) return false;
+
+  renderStructuredSection(key, parsed);
+  rebindHandlers();
+
+  if (isOnline && sheetRef) {
+    suppressRemote[key] = true;
+    sheetRef.child(key).set(parsed).catch(err => console.warn(`Failed to migrate ${key} to structured store`, err));
+  }
+
+  return true;
 }
 
 function buildGear(container) {
@@ -507,6 +763,31 @@ function addRelationship() {
 
 // ──── REBIND HANDLERS (after Firebase restore) ────
 
+function normalizeSkillCards() {
+  const container = document.getElementById('skills-content');
+  if (!container) return;
+
+  container.querySelectorAll('.skill-card').forEach(card => {
+    if (!card.classList.contains('open')) card.classList.add('open');
+    const header = card.querySelector('.skill-card-header');
+    if (!header) return;
+
+    let toggle = header.querySelector('.skill-toggle');
+    if (!toggle) {
+      toggle = document.createElement('span');
+      toggle.className = 'skill-toggle';
+      const arrow = document.createElement('span');
+      arrow.className = 'skill-arrow';
+      arrow.textContent = '\u25B6';
+      toggle.appendChild(arrow);
+
+      const slot = header.querySelector('.skill-slot');
+      if (slot) header.insertBefore(toggle, slot);
+      else header.insertBefore(toggle, header.firstChild);
+    }
+  });
+}
+
 function rebindHandlers() {
   document.querySelectorAll('.gear-toggle').forEach(t => { t.onclick = function() { toggleGear(this); }; });
   document.querySelectorAll('.skill-toggle').forEach(t => { t.onclick = function() { toggleSkill(this); }; });
@@ -722,6 +1003,7 @@ const LOCAL_KEY = 'raven_sheet_v4';
 let db = null, sheetRef = null, isOnline = false, activeSection = null, suppressRemote = {}, saveTimers = {};
 
 const ALL_KEYS = ['header/charName','header/charTitle','header/charRace','classLevels','allocatedFreePoints','classes','disciplines','skills','perks','gear','personality','oath','echo','story','relationships','notes'];
+const JSON_SECTION_KEYS = new Set(['classes','disciplines','skills','perks','gear','relationships','personality','story']);
 
 document.addEventListener('focusin', e => {
   const sec = e.target.closest('[data-section]');
@@ -743,6 +1025,21 @@ function getVal(key) {
   if (key === 'allocatedFreePoints') {
     return JSON.stringify(ALLOCATED_FREE_POINTS);
   }
+  if (JSON_SECTION_KEYS.has(key)) {
+    try {
+      switch (key) {
+        case 'skills': return JSON.stringify(serializeSkills());
+        case 'perks': return JSON.stringify(serializePerks());
+        case 'gear': return JSON.stringify(serializeGear());
+        case 'relationships': return JSON.stringify(serializeRelations());
+        case 'disciplines': return JSON.stringify(serializeDisciplines());
+        case 'classes': return JSON.stringify(serializeClasses());
+        case 'personality': return JSON.stringify(serializePersonality());
+        case 'story': return JSON.stringify(serializeStory());
+      }
+    } catch (e) { console.warn('serialize error', key, e); }
+  }
+
   const fld = document.querySelector(`[data-field="${key}"]`);
   if (fld) return fld.innerHTML;
   const sec = document.querySelector(`[data-section="${key}"]`);
@@ -752,6 +1049,32 @@ function getVal(key) {
     return sec.innerHTML;
   }
   return null;
+}
+
+function isHtmlString(value) {
+  return typeof value === 'string' && /<[^>]+>/.test(value);
+}
+
+function isStructuredSection(key) {
+  return ['classes','disciplines','skills','perks','gear','relationships','personality','oath','echo','story'].includes(key);
+}
+
+function serializeFirebaseSection(val) {
+  if (typeof val === 'string') return val;
+  if (Array.isArray(val)) return val.filter(v => typeof v === 'string').join('');
+  if (val && typeof val === 'object') {
+    if (typeof val.html === 'string') return val.html;
+    const sorted = Object.keys(val)
+      .sort((a,b) => {
+        const na = Number(a), nb = Number(b);
+        if (!Number.isNaN(na) && !Number.isNaN(nb)) return na - nb;
+        return String(a).localeCompare(b);
+      })
+      .map(k => val[k])
+      .filter(v => typeof v === 'string');
+    return sorted.join('');
+  }
+  return '';
 }
 
 function setVal(key, val) {
@@ -780,12 +1103,56 @@ function setVal(key, val) {
     } catch(e) {}
     return;
   }
-  // Reject non-string values for section content (old Firebase format was objects)
-  if (typeof val !== 'string') return;
+
+  if (JSON_SECTION_KEYS.has(key)) {
+    let structured = null;
+    if (typeof val === 'string') {
+      try {
+        structured = JSON.parse(val);
+      } catch (e) {
+        structured = null;
+      }
+    } else if (Array.isArray(val) || (val && typeof val === 'object')) {
+      structured = val;
+    }
+
+    if (structured && (Array.isArray(structured) || typeof structured === 'object')) {
+      renderStructuredSection(key, structured);
+      rebindHandlers();
+      return;
+    }
+
+    // If raw HTML was delivered, transform and migrate to structured JSON.
+    const normalized = serializeFirebaseSection(val);
+    const legacyStructured = parseLegacySectionData(key, normalized);
+    if (legacyStructured) {
+      renderStructuredSection(key, legacyStructured);
+      rebindHandlers();
+      if (isOnline && sheetRef) {
+        suppressRemote[key] = true;
+        sheetRef.child(key).set(legacyStructured).catch(err => console.warn(`Failed to migrate ${key} to structured store`, err));
+      }
+      return;
+    }
+
+    if (normalized === '' || !isHtmlString(normalized)) {
+      console.warn(`Invalid/empty remote section for ${key}, preserving local DOM`, val);
+      return;
+    }
+    val = normalized;
+  }
+
   const fld = document.querySelector(`[data-field="${key}"]`);
   if (fld) { fld.innerHTML = val; return; }
   const sec = document.querySelector(`[data-section="${key}"]`);
-  if (sec) { sec.innerHTML = val; rebindHandlers(); }
+  if (sec) {
+    if (typeof val === 'string' && val.trim() === '' && sec.innerHTML.trim() !== '') {
+      return;
+    }
+    sec.innerHTML = val;
+    if (key === 'skills') normalizeSkillCards();
+    rebindHandlers();
+  }
 }
 
 function setStatus(state, label) { document.getElementById('status-dot').className = 'status-dot ' + state; document.getElementById('status-label').textContent = label; }
@@ -821,7 +1188,10 @@ function startListening() {
       if (k === activeSection) return;
       if (suppressRemote[k]) { delete suppressRemote[k]; return; }
       let val = data; k.split('/').forEach(p => { if (val) val = val[p]; });
-      if (val !== undefined) setVal(k, val);
+      if (val === undefined || val === null) return;
+
+      // Let setVal handle structured vs legacy HTML deserialization.
+      setVal(k, val);
     });
   });
 }
