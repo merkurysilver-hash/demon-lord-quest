@@ -110,6 +110,7 @@ function makeDelBtn(section) {
 
 function toggleCard(el) { el.closest('.card').classList.toggle('collapsed'); }
 function toggleGear(el) { el.closest('.gear-item').classList.toggle('open'); }
+function toggleSkill(el) { el.closest('.skill-card').classList.toggle('open'); }
 
 function removeItem(btn, section) {
   const item = btn.closest('.deletable, .stat-block, .class-row, .skill-card, .perk-card, .gear-item, .rel-card, .discipline-tag');
@@ -230,7 +231,7 @@ function buildSkills(container) {
     const tier = s.tier || '—';
     const desc = s.desc || 'Click to add a description...';
     const empty = s.name ? '' : ' skill-card-empty';
-    return `<div class="skill-card${empty} deletable">${makeDelBtn('skills')}<div class="skill-card-header"><span class="skill-slot">${i+1}.</span><span class="skill-card-name" contenteditable="true">${name}</span><span class="skill-card-tier" contenteditable="true">${tier}</span></div><div class="skill-card-desc" contenteditable="true">${desc}</div></div>`;
+    return `<div class="skill-card open${empty} deletable">${makeDelBtn('skills')}<div class="skill-card-header"><span class="skill-toggle" onclick="toggleSkill(this)"><span class="skill-arrow">\u25B6</span></span><span class="skill-slot">${i+1}.</span><span class="skill-card-name" contenteditable="true">${name}</span><span class="skill-card-tier" contenteditable="true">${tier}</span></div><div class="skill-card-desc" contenteditable="true">${desc}</div></div>`;
   }).join('');
 }
 
@@ -465,8 +466,8 @@ function addSkill() {
   const c = document.getElementById('skills-content');
   const count = c.querySelectorAll('.skill-card').length + 1;
   const card = document.createElement('div');
-  card.className = 'skill-card skill-card-empty deletable';
-  card.innerHTML = `${makeDelBtn('skills')}<div class="skill-card-header"><span class="skill-slot">${count}.</span><span class="skill-card-name" contenteditable="true">‹New Skill›</span><span class="skill-card-tier" contenteditable="true">I</span></div><div class="skill-card-desc" contenteditable="true">Describe this skill...</div>`;
+  card.className = 'skill-card skill-card-empty deletable open';
+  card.innerHTML = `${makeDelBtn('skills')}<div class="skill-card-header"><span class="skill-toggle" onclick="toggleSkill(this)"><span class="skill-arrow">\u25B6</span></span><span class="skill-slot">${count}.</span><span class="skill-card-name" contenteditable="true">‹New Skill›</span><span class="skill-card-tier" contenteditable="true">I</span></div><div class="skill-card-desc" contenteditable="true">Describe this skill...</div>`;
   c.appendChild(card);
   card.querySelector('.skill-card-name').focus();
   scheduleSave('skills');
@@ -508,6 +509,7 @@ function addRelationship() {
 
 function rebindHandlers() {
   document.querySelectorAll('.gear-toggle').forEach(t => { t.onclick = function() { toggleGear(this); }; });
+  document.querySelectorAll('.skill-toggle').forEach(t => { t.onclick = function() { toggleSkill(this); }; });
   document.querySelectorAll('.del-btn').forEach(b => {
     const section = b.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
     if (section) b.onclick = function() { removeItem(this, section); };
